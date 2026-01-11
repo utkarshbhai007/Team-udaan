@@ -29,7 +29,6 @@ import NotFound from '@/pages/NotFound';
 import { useSessionTimeout } from '@/hooks/useSessionTimeout';
 import LabDashboard from './pages/LabDashboard';
 import DoctorDashboard from './pages/DoctorDashboard';
-import PatientDashboard from './pages/PatientDashboard';
 
 // Wrapper component to conditionally render DidYouKnow
 const DidYouKnowWrapper = () => {
@@ -78,9 +77,9 @@ const AppContent = () => {
             </Route>
 
             <Route element={<RoleBasedRoute allowedRoles={['patient']} />}>
-              <Route path="/patient-dashboard" element={<PatientDashboard />} />
+              <Route path="/patient-dashboard" element={<PatientPortal />} />
               <Route path="/patient-portal" element={<PatientPortal />} />
-              <Route path="/patient" element={<PatientDashboard />} />
+              <Route path="/patient" element={<PatientPortal />} />
               <Route path="/patient-analysis" element={<PatientAnalysis />} />
               <Route path="/patient/analysis" element={<PatientAnalysis />} />
               <Route path="/patient/analysis/:id" element={<AnalysisResults />} />

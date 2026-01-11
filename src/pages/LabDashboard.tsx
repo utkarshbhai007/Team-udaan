@@ -8,7 +8,6 @@ import GlassCard from "@/components/ui/GlassCard";
 import { Loader2, FileText, Upload, Play, CheckCircle2, User, Stethoscope } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { pathologyAI } from "@/utils/apiService";
-import { blockchainService, MOCK_USERS, MOCK_DOCTORS } from "@/services/BlockchainService";
 import { useNavigate } from "react-router-dom";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
@@ -90,28 +89,20 @@ const LabDashboard = () => {
         }
       );
 
-      console.log('✅ LabDashboard: Analysis complete', analysisResults);
-      // Assuming analysisResults now contains the full structure including QC, care coordination, etc.
-      // If not, `setFullAnalysis` would need to be defined and populated.
-      // For this change, I'll assume `analysisResults` is the final output.
-      // setFullAnalysis(analysisResults); // This state variable is not defined in the original code.
+      console.log('✅ LabDashboard: Analysis complete and saved', analysisResults);
 
-      // 3. Mint to Blockchain (Optional Simulation now, as backend is real source of truth)
-      // We still keep this for the "Blockchain" visual effect if needed, but data source is now MongoDB
-      let record = null;
-      try {
-        // The instruction implies `analysisResults` is the data to be minted.
-        record = await blockchainService.mintRecord(selectedPatientId, selectedDoctorId, analysisResults);
-        setMintedRecord(record);
-      } catch (e) {
-        console.error("Blockchain Minting failed (non-critical)", e);
-      }
+      // Map backend report to local "Record" structure for UI
+      const record = {
+        recordId: analysisResults._id,
+        timestamp: analysisResults.createdAt
+      };
+      setMintedRecord(record);
 
-      // Save for immediate local access fallback
+      // Save for immediate local access fallback (optional but good for UX speed)
       localStorage.setItem('currentPatientAnalysis', JSON.stringify({
         patientInfo: patient,
         analysis: analysisResults,
-        blockchainRecord: record ? record : { recordId: 'PENDING-BACKEND' }
+        blockchainRecord: record
       }));
 
       setStatus('complete');
@@ -231,8 +222,8 @@ const LabDashboard = () => {
                   <div className="ml-auto text-sm">{status === 'analyzing' ? 'Pending...' : status === 'complete' || status === 'minting' ? 'Done' : 'Waiting'}</div>
                 </div>
                 <div className={`flex items-center gap-4 p-3 rounded-lg ${status === 'complete' ? 'bg-blue-50 text-blue-700' : 'bg-gray-50 text-gray-400'}`}>
-                  <div className="font-bold">3. Blockchain Minting</div>
-                  <div className="ml-auto text-sm">{status === 'minting' ? <Loader2 className="animate-spin" /> : status === 'complete' ? 'Minted' : 'Waiting'}</div>
+                  <div className="font-bold">3. Database Persistence</div>
+                  <div className="ml-auto text-sm">{status === 'minting' ? <Loader2 className="animate-spin" /> : status === 'complete' ? 'Saved' : 'Waiting'}</div>
                 </div>
               </div>
 

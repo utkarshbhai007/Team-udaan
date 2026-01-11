@@ -6,7 +6,6 @@ import GlassCard from "@/components/ui/GlassCard";
 import { Activity, AlertTriangle, FileText, User, Calendar, ArrowRight, Shield, Stethoscope, ChevronLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { pathologyAI } from "@/utils/apiService";
-import { blockchainService } from "@/services/BlockchainService";
 import { useAuth } from "@/contexts/AuthContext";
 
 const DoctorDashboard = () => {
@@ -399,46 +398,7 @@ const DoctorDashboard = () => {
           </div>
         )}
 
-        {/* DEBUG SECTION */}
-        <div className="mt-12 p-4 bg-gray-100 border-2 border-dashed border-gray-400 rounded-xl">
-          <h3 className="font-bold text-red-600 mb-2">🔧 DEBUG: RAW BLOCKCHAIN DATA</h3>
-          <Button
-            size="sm"
-            variant="outline"
-            className="mb-4"
-            onClick={() => {
-              const all = blockchainService.getAllRecords();
-              console.log('ALL RECORDS:', all);
-              alert('Check Console for full records');
-            }}
-          >
-            Log All Records to Console
-          </Button>
-
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full mb-2 bg-red-50 text-red-700 hover:bg-red-100"
-            onClick={async () => {
-              console.log("🕵️‍♂️ Debug: Fetching ALL reports from DB (no filter)...");
-              const allReports = await pathologyAI.getReports({});
-              console.log("📊 ALL DB REPORTS:", allReports);
-              alert(`Found ${allReports.length} total reports in DB.\nCheck Console for details.`);
-            }}
-          >
-            🕵️‍♂️ Debug: Check Database for ANY Reports
-          </Button>
-
-          <div className="text-xs font-mono text-gray-700 bg-white p-2 border mb-2 rounded">
-            <strong>Current Logged In User:</strong><br />
-            UID: {user?.uid || 'Not Logged In'}<br />
-            Role: {user?.role || 'N/A'}<br />
-            Name: {user?.name || 'N/A'}
-          </div>
-          <div className="text-xs font-mono whitespace-pre-wrap bg-white p-2 h-64 overflow-auto border">
-            {JSON.stringify(blockchainService.getAllRecords(), null, 2)}
-          </div>
-        </div>
+        {/* DEBUG SECTION REMOVED FOR PRODUCTION */}
       </div>
     </PageContainer>
   );
