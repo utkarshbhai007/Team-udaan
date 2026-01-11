@@ -5,7 +5,7 @@ import PageContainer from "@/components/layout/PageContainer";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import GlassCard from "@/components/ui/GlassCard";
-import { Loader2, FileText, Upload, Play, CheckCircle2, User, Stethoscope } from "lucide-react";
+import { Loader2, FileText, Upload, Play, CheckCircle2, User, Stethoscope, Microscope, Database, Activity } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { pathologyAI } from "@/utils/apiService";
 import { useNavigate } from "react-router-dom";
@@ -74,13 +74,11 @@ const LabDashboard = () => {
       // I'm assuming `fullData` in the instruction refers to `baseResult` or a similar comprehensive data object.
       // Given the instruction, I'll adapt the flow to match the new `generatePathologyReport` call.
 
-      console.log('🤖 LabDashboard: Generating analysis...');
-      // Pass full context including IDs to the backend for persistence
-      // Assuming `generatePathologyReport` now takes the raw patientData and context for full analysis and saving.
-      // If `baseResult` was intended to be `fullData`, then `pathologyAI.generatePathologyReport(baseResult, { ... })` would be more appropriate.
-      // For now, I'll use `patientData` as the primary input and pass context.
+      console.log('LabDashboard: Generating analysis...');
+
+      // Run Core AI Analysis and Save to Backend
       const analysisResults = await pathologyAI.generatePathologyReport(
-        { patientData: patientData }, // Assuming this is the primary data for analysis
+        { patientData: patientData },
         {
           patientId: selectedPatientId,
           doctorId: selectedDoctorId,
@@ -89,7 +87,7 @@ const LabDashboard = () => {
         }
       );
 
-      console.log('✅ LabDashboard: Analysis complete and saved', analysisResults);
+      console.log('LabDashboard: Analysis complete and saved', analysisResults);
 
       // Map backend report to local "Record" structure for UI
       const record = {
@@ -124,8 +122,11 @@ const LabDashboard = () => {
     <PageContainer>
       <div className="max-w-4xl mx-auto py-12 px-4">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">🔬 Lab Dashboard</h1>
-          <p className="text-gray-600">Sample Processing & AI Analysis Operations</p>
+          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+            <Microscope className="h-8 w-8 text-blue-600" />
+            Lab Dashboard
+          </h1>
+          <p className="text-gray-600 mt-2">Sample Processing & AI Analysis Operations</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -228,18 +229,29 @@ const LabDashboard = () => {
               </div>
 
               {status === 'complete' && (
-                <div className="mt-8 p-4 bg-green-100 rounded-xl border border-green-200 text-center">
-                  <CheckCircle2 className="h-12 w-12 text-green-600 mx-auto mb-2" />
-                  <h3 className="font-bold text-green-800">Processing Complete</h3>
-                  <p className="text-sm text-green-600 mb-2">Record assigned to {doctors.find(d => d._id === selectedDoctorId)?.name}.</p>
-                  <div className="text-xs text-gray-600 space-y-1">
-                    <p>Record ID: {mintedRecord?.recordId || 'N/A'}</p>
-                    <p>Patient ID: {selectedPatientId}</p>
-                    <p>Doctor ID: {selectedDoctorId}</p>
+                <div className="mt-8 p-6 bg-green-50 rounded-xl border border-green-200 text-center">
+                  <CheckCircle2 className="h-16 w-16 text-green-600 mx-auto mb-4" />
+                  <h3 className="text-xl font-bold text-green-800 mb-2">Processing Complete</h3>
+                  <p className="text-sm text-green-600 mb-4">Record successfully assigned to {doctors.find(d => d._id === selectedDoctorId)?.name}.</p>
+
+                  <div className="bg-white p-4 rounded-lg border border-green-100 text-left max-w-sm mx-auto space-y-2 mb-6 shadow-sm">
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-gray-500">Record ID</span>
+                      <span className="font-mono font-medium">{mintedRecord?.recordId || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-gray-500">Patient ID</span>
+                      <span className="font-mono font-medium">{selectedPatientId}</span>
+                    </div>
                   </div>
-                  <div className="flex justify-center gap-4 mt-4">
-                    <Button size="sm" variant="outline" onClick={() => navigate('/doctor-dashboard')}>View Doctor Portal</Button>
-                    <Button size="sm" variant="outline" onClick={() => navigate('/patient-portal')}>View Patient Portal</Button>
+
+                  <div className="flex justify-center gap-4">
+                    <Button variant="outline" onClick={() => navigate('/doctor-dashboard')}>
+                      View Doctor Portal
+                    </Button>
+                    <Button variant="outline" onClick={() => navigate('/patient-portal')}>
+                      View Patient Portal
+                    </Button>
                   </div>
                 </div>
               )}

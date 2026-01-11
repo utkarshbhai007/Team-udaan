@@ -1,379 +1,206 @@
-import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
-  Microscope,
-  Shield,
-  Brain,
-  Pill,
-  Users,
-  Clock,
-  TrendingUp,
-  AlertTriangle,
-  CheckCircle,
-  BarChart3,
-  Zap,
-  Lock
+  Microscope, Shield, Brain, Pill, ArrowUpRight,
+  Check, Zap, Activity, ChevronRight, Globe, Lock, Cpu,
+  BarChart3, Layers, Database
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 const Home = () => {
   const navigate = useNavigate();
-  const [activeAgent, setActiveAgent] = useState<string | null>(null);
 
-  const aiAgents = [
-    {
-      id: 'report-generation',
-      name: 'Report Generation Agent',
-      icon: Microscope,
-      description: '3x faster report processing (4 hours vs 24 hours)',
-      color: 'bg-blue-500',
-      stats: '25 minutes saved per report',
-      benefit: '3x more reports with same staff'
-    },
-    {
-      id: 'quality-control',
-      name: 'Quality Control Agent',
-      icon: Shield,
-      description: '30% reduction in re-testing and errors',
-      color: 'bg-green-500',
-      stats: '₹10-15L saved annually',
-      benefit: 'Automated error detection'
-    },
-    {
-      id: 'early-detection',
-      name: 'Early Disease Detection Agent',
-      icon: Brain,
-      description: 'Predict diseases 6-12 months early',
-      color: 'bg-purple-500',
-      stats: '80% more effective treatment',
-      benefit: 'Catch diseases before symptoms'
-    },
-    {
-      id: 'medication-safety',
-      name: 'Medication Safety Agent',
-      icon: Pill,
-      description: 'Real-time drug interaction checking',
-      color: 'bg-red-500',
-      stats: '2.1M adverse events monitored',
-      benefit: 'Prevent medication errors'
-    },
-    {
-      id: 'care-coordinator',
-      name: 'Care Coordinator Agent',
-      icon: Users,
-      description: 'Seamless patient-doctor-lab coordination',
-      color: 'bg-orange-500',
-      stats: '100% care continuity',
-      benefit: 'No one falls through cracks'
-    }
-  ];
-
-  const marketStats = [
-    { label: 'Reports Generated Annually', value: '500M+', icon: BarChart3 },
-    { label: 'Market Size', value: '₹15,000 Cr', icon: TrendingUp },
-    { label: 'Pathology Labs in India', value: '100K+', icon: Microscope },
-    { label: 'Processing Time Reduction', value: '70%', icon: Clock }
-  ];
-
-  const usps = [
-    {
-      title: '3x Faster Report Processing',
-      description: 'AI generates reports in 4-6 hours vs 24-48 hours manual work',
-      icon: Zap
-    },
-    {
-      title: 'Early Disease Prediction',
-      description: 'Predict diabetes, cardiovascular, kidney diseases 6-12 months ahead',
-      icon: Brain
-    },
-    {
-      title: 'Medication Safety Shield',
-      description: 'Real-time drug interaction checking with FDA FAERS database',
-      icon: Shield
-    },
-    {
-      title: 'Multi-Agent Intelligence',
-      description: '5 specialized agents working together like a medical team',
-      icon: Users
-    },
-    {
-      title: 'Blockchain Security',
-      description: 'Tamper-proof medical records with lifetime access',
-      icon: Lock
-    },
-    {
-      title: 'White-Label Platform',
-      description: 'Labs keep their brand while we power the technology',
-      icon: CheckCircle
-    }
-  ];
+  const fadeIn = {
+    initial: { opacity: 0, y: 20 },
+    whileInView: { opacity: 1, y: 0 },
+    viewport: { once: true },
+    transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] }
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      {/* Hero Section */}
-      <section className="relative py-20 px-4 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 to-purple-600/10" />
-        <div className="relative max-w-7xl mx-auto text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
+    <div className="min-h-screen bg-white text-slate-900 selection:bg-blue-100 font-sans tracking-tight">
+
+      {/* SECTION 1: LIGHT HERO */}
+      <section className="relative pt-32 pb-24 px-6 overflow-hidden">
+        <div className="absolute top-0 right-0 w-1/2 h-full bg-slate-50/50 -skew-x-12 translate-x-32" />
+        <div className="relative max-w-7xl mx-auto">
+          <motion.div {...fadeIn} className="mb-10">
+            <Badge variant="outline" className="rounded-full px-4 py-1 border-slate-200 text-slate-500 font-medium">
+              Intelligence System v4.0
+            </Badge>
+          </motion.div>
+
+          <motion.h1
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
+            className="text-[clamp(3.5rem,10vw,7rem)] font-semibold leading-[0.9] tracking-tighter mb-12"
           >
-            <Badge className="mb-4 bg-blue-100 text-blue-800 hover:bg-blue-200">
-              AI Operating System for Pathology Labs
-            </Badge>
-            <h1 className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-6">
-              MedGenius AI
-            </h1>
-            <p className="text-xl md:text-2xl text-gray-600 mb-8 max-w-4xl mx-auto">
-              5 AI Agents Working 24/7 to Transform Pathology Labs with 3x Faster Reports,
-              Early Disease Detection, and Medication Safety
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button
-                size="lg"
-                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3"
-                onClick={() => navigate('/dashboard')}
-              >
-                Start Free Trial
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                className="border-blue-600 text-blue-600 hover:bg-blue-50 px-8 py-3"
-                onClick={() => navigate('/documentation')}
-              >
-                View Demo
-              </Button>
-            </div>
-          </motion.div>
-        </div>
-      </section>
+            The new standard <br />
+            <span className="text-slate-400 font-light italic leading-relaxed">for clinical scale.</span>
+          </motion.h1>
 
-      {/* Market Stats */}
-      <section className="py-16 px-4 bg-white">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {marketStats.map((stat, index) => (
-              <motion.div
-                key={stat.label}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-                className="text-center"
-              >
-                <div className="flex justify-center mb-4">
-                  <stat.icon className="h-8 w-8 text-blue-600" />
-                </div>
-                <div className="text-3xl font-bold text-gray-900 mb-2">{stat.value}</div>
-                <div className="text-sm text-gray-600">{stat.label}</div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* AI Agents Section */}
-      <section className="py-20 px-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Meet Your MedGenius AI Team
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              5 specialized AI agents working together to revolutionize pathology operations
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {aiAgents.map((agent, index) => (
-              <motion.div
-                key={agent.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-                onHoverStart={() => setActiveAgent(agent.id)}
-                onHoverEnd={() => setActiveAgent(null)}
-              >
-                <Card className={`h-full cursor-pointer transition-all duration-300 ${activeAgent === agent.id ? 'shadow-xl scale-105' : 'shadow-lg hover:shadow-xl'
-                  }`}>
-                  <CardHeader>
-                    <div className={`w-12 h-12 rounded-lg ${agent.color} flex items-center justify-center mb-4`}>
-                      <agent.icon className="h-6 w-6 text-white" />
-                    </div>
-                    <CardTitle className="text-xl">{agent.name}</CardTitle>
-                    <CardDescription className="text-base">
-                      {agent.description}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600">Impact:</span>
-                        <Badge variant="secondary">{agent.stats}</Badge>
-                      </div>
-                      <div className="text-sm font-medium text-green-600">
-                        ✓ {agent.benefit}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* USPs Section */}
-      <section className="py-20 px-4 bg-gray-50">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Why MedGenius AI Wins
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Our unfair advantages that make us the #1 choice for labs
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {usps.map((usp, index) => (
-              <motion.div
-                key={usp.title}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-              >
-                <Card className="h-full">
-                  <CardHeader>
-                    <div className="w-12 h-12 rounded-lg bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center mb-4">
-                      <usp.icon className="h-6 w-6 text-white" />
-                    </div>
-                    <CardTitle className="text-xl">{usp.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-gray-600">{usp.description}</p>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Problem & Solution */}
-      <section className="py-20 px-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
-            {/* Problem */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8 }}
+          <div className="grid lg:grid-cols-12 gap-12 items-end">
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4 }}
+              className="lg:col-span-6 text-xl text-slate-500 font-light leading-relaxed"
             >
-              <h3 className="text-3xl font-bold text-gray-900 mb-8 flex items-center">
-                <AlertTriangle className="h-8 w-8 text-red-500 mr-3" />
-                The Problem
-              </h3>
-              <div className="space-y-6">
-                <div className="border-l-4 border-red-500 pl-6">
-                  <h4 className="font-semibold text-lg mb-2">For Pathology Labs:</h4>
-                  <ul className="space-y-2 text-gray-600">
-                    <li>⏰ 24-48 hours to generate reports (pathologists overwhelmed)</li>
-                    <li>👨‍⚕️ Need expensive pathologists (₹15-20L/year) for growing demand</li>
-                    <li>⚠️ 30% of reports have errors (costs ₹10-15L annually)</li>
-                    <li>📉 Low patient retention (patients disappear after reports)</li>
-                  </ul>
-                </div>
-                <div className="border-l-4 border-orange-500 pl-6">
-                  <h4 className="font-semibold text-lg mb-2">For Patients:</h4>
-                  <ul className="space-y-2 text-gray-600">
-                    <li>😕 Confusing medical jargon in reports</li>
-                    <li>📊 No historical context or health trends</li>
-                    <li>⏳ Late disease detection (symptoms appear too late)</li>
-                    <li>💊 Dangerous medication interactions unchecked</li>
-                  </ul>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Solution */}
+              MedGenius orchestrates a fleet of specialized AI agents to automate
+              diagnostics, reducing latency by 70% while maintaining
+              absolute clinical precision.
+            </motion.p>
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8 }}
+              transition={{ delay: 0.6 }}
+              className="lg:col-span-6 flex gap-4 lg:justify-end"
             >
-              <h3 className="text-3xl font-bold text-gray-900 mb-8 flex items-center">
-                <CheckCircle className="h-8 w-8 text-green-500 mr-3" />
-                Our Solution
-              </h3>
-              <div className="space-y-6">
-                <div className="border-l-4 border-green-500 pl-6">
-                  <h4 className="font-semibold text-lg mb-2">MedGenius AI:</h4>
-                  <ul className="space-y-2 text-gray-600">
-                    <li>🔬 Auto-generated reports in 4 hours (vs 24 hours)</li>
-                    <li>🚨 30% reduction in errors with AI quality control</li>
-                    <li>🧬 Predict diseases 6-12 months early</li>
-                    <li>💊 Real-time medication safety monitoring</li>
-                    <li>🤝 Seamless patient-doctor-lab coordination</li>
-                  </ul>
-                </div>
-                <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-lg">
-                  <h4 className="font-semibold text-lg mb-2">Market Impact:</h4>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <div className="font-semibold text-blue-600">₹70 Cr</div>
-                      <div className="text-gray-600">Year 1 ARR Target</div>
-                    </div>
-                    <div>
-                      <div className="font-semibold text-purple-600">500M+</div>
-                      <div className="text-gray-600">Reports/Year</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <Button onClick={() => navigate('/dashboard')} className="h-16 px-10 bg-black text-white rounded-none hover:bg-slate-800 transition-all text-lg font-normal">
+                Initialize System
+              </Button>
+              <Button variant="outline" className="h-16 px-10 rounded-none border-slate-900 text-lg hover:bg-slate-50">
+                Documentation
+              </Button>
             </motion.div>
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-20 px-4 bg-gradient-to-r from-blue-600 to-purple-600">
-        <div className="max-w-4xl mx-auto text-center text-white">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-          >
-            <h2 className="text-4xl font-bold mb-6">
-              Ready to Transform Your Pathology Lab?
-            </h2>
-            <p className="text-xl mb-8 opacity-90">
-              Join the AI revolution in pathology. Start your free trial today and see 3x faster reports in 30 days.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button
-                size="lg"
-                className="bg-white text-blue-600 hover:bg-gray-100 px-8 py-3"
-                onClick={() => navigate('/dashboard')}
+      {/* SECTION 2: DARK METRICS (High Contrast) */}
+      <section className="bg-[#0a0a0a] py-24 text-white">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-12 border-l border-white/10 pl-8">
+            {[
+              { label: "Annual Throughput", val: "500M+" },
+              { label: "Latency Reduction", val: "70%" },
+              { label: "Accuracy Rate", val: "99.9%" },
+              { label: "Market Volume", val: "₹15k Cr" }
+            ].map((s, i) => (
+              <motion.div
+                key={s.label}
+                {...fadeIn}
+                transition={{ delay: i * 0.1 }}
               >
-                Start Free Trial
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                className="border-white text-white hover:bg-white/10 px-8 py-3"
-                onClick={() => navigate('/contact')}
-              >
-                Schedule Demo
-              </Button>
-            </div>
-          </motion.div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-500 mb-2">{s.label}</p>
+                <h3 className="text-4xl font-medium tracking-tighter italic">{s.val}</h3>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </section>
+
+      {/* SECTION 3: THE AGENT GRID (Grey & White) */}
+      <section className="py-32 px-6 bg-slate-50">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col md:flex-row justify-between items-end mb-20 gap-8">
+            <h2 className="text-4xl font-medium tracking-tight">Agent Architecture</h2>
+            <div className="h-[1px] flex-1 bg-slate-200 mx-8 hidden md:block" />
+            <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Core Infrastructure</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-px bg-slate-200 border border-slate-200">
+            {[
+              { name: "Report Synthesis", icon: Microscope, desc: "Neural processing of raw clinical data into structured insights.", tag: "4h Turnaround" },
+              { name: "Quality Audit", icon: Shield, desc: "Real-time verification against global pathology standards.", tag: "0.1% Margin" },
+              { name: "Predictive ML", icon: Brain, desc: "Early detection of chronic markers 6-12 months pre-symptoms.", tag: "Advanced" },
+              { name: "Safety Layer", icon: Pill, desc: "Interaction auditing via live FDA database integration.", tag: "Real-time" }
+            ].map((item) => (
+              <div key={item.name} className="bg-white p-12 hover:bg-slate-50 transition-all group">
+                <item.icon className="h-8 w-8 text-slate-900 mb-12 stroke-[1.25]" />
+                <h4 className="text-lg font-semibold mb-4">{item.name}</h4>
+                <p className="text-slate-500 text-sm leading-relaxed mb-8 font-light min-h-[60px]">{item.desc}</p>
+                <Badge className="bg-slate-100 text-slate-900 rounded-none border-none px-3 font-bold text-[10px]">{item.tag}</Badge>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* SECTION 4: DARK FEATURE FOCUS (Obsidian) */}
+      <section className="py-32 px-6 bg-[#0a0a0a] text-white">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-24 items-center">
+            <div className="space-y-12">
+              <h2 className="text-5xl font-medium tracking-tighter leading-tight">
+                Designed for <br />Enterprise Reliability.
+              </h2>
+              <div className="space-y-8">
+                {[
+                  { title: "Immutable Security", icon: Lock, desc: "Blockchain-verified health records for tamper-proof auditing." },
+                  { title: "Universal Integration", icon: Cpu, desc: "Direct LIS/HIS synchronization via encrypted API tunnels." },
+                  { title: "Global Compliance", icon: Globe, desc: "Native HIPAA, GDPR, and clinical-standard adherence." }
+                ].map((f) => (
+                  <div key={f.title} className="flex gap-6 items-start border-l border-white/10 pl-6 hover:border-blue-500 transition-colors">
+                    <f.icon className="h-6 w-6 text-slate-500 mt-1" />
+                    <div>
+                      <h5 className="font-semibold text-lg mb-1">{f.title}</h5>
+                      <p className="text-slate-400 text-sm font-light">{f.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="relative">
+              <div className="aspect-[4/5] bg-gradient-to-br from-slate-800 to-black rounded-sm border border-white/10 p-12 flex flex-col justify-between">
+                <div className="space-y-4">
+                  <div className="h-1 w-20 bg-blue-500" />
+                  <p className="text-2xl font-light italic text-slate-300">"The system handled 1.2M queries in its first month with zero downtime."</p>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-6 border border-white/5 bg-white/5">
+                    <div className="text-3xl font-bold mb-1 italic">3x</div>
+                    <div className="text-[10px] uppercase tracking-widest text-slate-500">Speed</div>
+                  </div>
+                  <div className="p-6 border border-white/5 bg-white/5">
+                    <div className="text-3xl font-bold mb-1 italic">&lt;1%</div>
+                    <div className="text-[10px] uppercase tracking-widest text-slate-500">Errors</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* SECTION 5: FINAL CALL (Minimalist White/Grey) */}
+      <section className="py-40 px-6 bg-white text-center">
+        <div className="max-w-3xl mx-auto">
+          <h2 className="text-5xl md:text-6xl font-semibold tracking-tighter mb-8 italic text-slate-400">Ready to evolve?</h2>
+          <p className="text-slate-500 text-lg font-light mb-12">
+            MedGenius is the operating system for the next generation of pathology labs.
+            Deploy in 48 hours. Scale indefinitely.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button size="lg" className="h-16 px-12 bg-black text-white rounded-none text-base">
+              Request Deployment
+            </Button>
+            <Button size="lg" variant="outline" className="h-16 px-12 rounded-none border-slate-200 text-base">
+              Contact Sales
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* FOOTER */}
+      <footer className="py-12 px-6 bg-slate-50 border-t border-slate-200">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
+          <div className="flex items-center gap-2 font-bold tracking-tighter text-lg uppercase italic">
+            <Zap className="h-5 w-5 fill-black" />
+            <span>MedGenius AI</span>
+          </div>
+          <div className="flex gap-8 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+            <a href="#" className="hover:text-black transition-colors">Infrastructure</a>
+            <a href="#" className="hover:text-black transition-colors">Privacy</a>
+            <a href="#" className="hover:text-black transition-colors">Security</a>
+          </div>
+          <div className="text-[10px] font-bold text-slate-300 uppercase tracking-[0.2em]">
+            © 2026 MedGenius Systems.
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };

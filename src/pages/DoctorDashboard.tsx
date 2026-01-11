@@ -74,15 +74,8 @@ const DoctorDashboard = () => {
   React.useEffect(() => {
     const fetchRecords = async () => {
       if (doctorId) {
-        console.log('🔍 DoctorDashboard: Fetching reports for doctorId:', doctorId);
-
-        // OLD: Blockchain Service
-        // const recs = blockchainService.getRecordsByDoctor(doctorId);
-
-        // NEW: Backend API Service
+        // Backend API Service
         const reports = await pathologyAI.getReports({ doctorId });
-        console.log('📋 Backend Reports Found:', reports.length, reports);
-
         // Map Backend Report -> Dashboard Record Format
         const mappedRecords = reports.map((r: any) => ({
           recordId: r._id,
@@ -90,12 +83,10 @@ const DoctorDashboard = () => {
           assignedDoctorId: r.doctorId,
           timestamp: r.createdAt,
           status: 'Verified',
-          fullData: r.aiAnalysis || {}, // The analysis is stored here
-          // Keep other fields for compatibility
+          fullData: r.aiAnalysis || {},
           dataHash: 'BACKEND-VERIFIED',
           blockHeight: 0
         }));
-
         setRecords(mappedRecords);
       }
     };
@@ -117,8 +108,11 @@ const DoctorDashboard = () => {
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">👨‍⚕️ Doctor Portal</h1>
-            <p className="text-gray-600">Assigned Patient Queue & Clinical Analysis</p>
+            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+              <Activity className="h-8 w-8 text-blue-600" />
+              Doctor Portal
+            </h1>
+            <p className="text-gray-600 mt-2">Assigned Patient Queue & Clinical Analysis</p>
           </div>
           <div className="flex items-center gap-2">
             {user && user.role === 'doctor' ? (

@@ -99,7 +99,7 @@ const PatientPortal = () => {
 
         // NEW: Backend API Service
         const reports = await pathologyAI.getReports({ patientId: user.uid });
-        console.log('✅ PatientPortal: Fetched reports', reports);
+        console.log('PatientPortal: Fetched reports', reports);
 
         // Helper to calculate score dynamically if missing
         const calculateScore = (analysis: any) => {
@@ -196,7 +196,7 @@ const PatientPortal = () => {
         }
       });
 
-      console.log('💊 Potential Meds:', Array.from(candidates));
+      console.log('Potential Meds:', Array.from(candidates));
 
       const validatedMeds = [];
       for (const drug of Array.from(candidates)) {
