@@ -35,39 +35,59 @@ class PathologyAIService {
   }
 
   // 🔬 Report Generation Agent
-  async generatePathologyReport(patientData: any, patientInfo?: any) {
+  async generatePathologyReport(patientData: any, context?: any) {
     try {
-      // Assuming patientData now contains what was previously testResults and patientData
-      // Or that patientInfo is the new testResults.
-      // For now, keeping the original structure for rawData based on the provided snippet,
-      // which implies `testResults` might be part of `patientData` or `patientInfo`
-      // or the `rawData` line needs further adjustment not specified.
-      // To maintain syntactic correctness and follow the snippet, we'll assume `testResults`
-      // is implicitly available or `patientData` is a combined object.
-      // If `testResults` is truly removed, this line would cause an error.
-      // Given the legacy export `analyzePatientData` still passes `data.testResults`,
-      // it's safer to assume `patientData` in the new signature might contain `testResults`
-      // or `patientInfo` is the new `testResults`.
-      // For faithful reproduction of the snippet, `...testResults` is kept as is.
-      const response = await api.post('/ai/generate-report', {
-        patientName: patientData.name || 'Unknown',
-        testType: 'Other', // Changed to match Mongoose enum ['Blood Panel', 'Lipid Profile', ..., 'Other']
-        rawData: { ...patientInfo, ...patientData } // Adjusted to use patientInfo as testResults
-      });
+      // Context should contain { patientId, doctorId, patientName, testType }
+      const payload = {
+        patientName: context?.patientName || patientData.name || 'Unknown',
+        patientId: context?.patientId,
+        doctorId: context?.doctorId,
+        testType: context?.testType || 'General Analysis',
+        rawData: { ...patientData, ...context }
+      };
+
+      const response = await api.post('/ai/generate-report', payload);
 
       // Backend returns { success: true, data: Report }
       // We need to return the aiAnalysis object to match frontend expectation
       if (response.data?.data?.aiAnalysis) {
-        // The frontend expects the analysis structure directly
-        return response.data.data.aiAnalysis;
+        return response.data.data; // Return full report object including IDs
       }
       throw new Error('Invalid response structure from backend');
 
     } catch (error) {
       console.error('Report Generation Agent Error:', error);
-      return this.getFallbackReport(testResults, patientData);
+      return this.getFallbackReport(patientData, context);
     }
   }
+
+  // Fetch Reports from Backend (Replaces Blockchain)
+  async getReports(filters: { patientId?: string, doctorId?: string } = {}) {
+    try {
+      const params = new URLSearchParams();
+      if (filters.patientId) params.append('patientId', filters.patientId);
+      if (filters.doctorId) params.append('doctorId', filters.doctorId);
+
+      const response = await api.get(`/ai/reports?${params.toString()}`);
+      return response.data.data;
+    } catch (error) {
+      console.error('Error fetching reports:', error);
+      return [];
+    }
+  }
+
+  // Update Report (e.g. save Care Plan)
+  async updateReport(reportId: string, updates: any) {
+    try {
+      const response = await api.put(`/ai/reports/${reportId}`, updates);
+      return response.data.data;
+    } catch (error) {
+      console.error('Error updating report:', error);
+      throw error;
+    }
+  }
+
+
 
   // 🚨 Quality Control Agent
   async performQualityCheck(reportData: any) {

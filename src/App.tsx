@@ -64,11 +64,11 @@ const AppContent = () => {
 
         {/* Protected Routes - Require authentication and use Layout */}
         <Route element={<PrivateRoute />}>
-          <Route element={<Layout />}> {/* Layout wraps these routes */}
+          <Route element={<Layout />}>
             <Route path="/home" element={<Home />} />
             <Route path="/dashboard" element={<Dashboard />} />
 
-            {/* PathologyAI Hub Strict Role-Based Dashboards */}
+            {/* Role based dashboards */}
             <Route element={<RoleBasedRoute allowedRoles={['lab_admin']} />}>
               <Route path="/lab-dashboard" element={<LabDashboard />} />
             </Route>
@@ -85,6 +85,7 @@ const AppContent = () => {
               <Route path="/patient/analysis" element={<PatientAnalysis />} />
               <Route path="/patient/analysis/:id" element={<AnalysisResults />} />
             </Route>
+
             <Route path="/drug-discovery" element={<DrugDiscovery />} />
             <Route path="/side-effects" element={<SideEffects />} />
             <Route path="/drug-recommendation" element={<DrugRecommendation />} />
@@ -93,21 +94,15 @@ const AppContent = () => {
             <Route path="/profile" element={<Profile />} />
             <Route path="/about" element={<AboutUs />} />
             <Route path="/contact" element={<ContactUs />} />
-            {/* Documentation Routes inside Layout */}
             <Route path="/documentation" element={<Documentation />} />
             <Route path="/api-reference" element={<ApiReference />} />
-            {/* Admin Routes inside Layout */}
-            <Route element={<AdminRoute />}> {/* Nested Admin Check */}
+            <Route element={<AdminRoute />}>
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/admin/users" element={<UserManagement />} />
               <Route path="/admin/settings" element={<Settings />} />
             </Route>
-            {/* Fallback for not found pages inside Layout */}
             <Route path="*" element={<NotFound />} />
           </Route>
-
-          {/* Doctor Dashboard outside Layout for testing */}
-          <Route path="/doctor-dashboard" element={<DoctorDashboard />} />
         </Route>
 
         {/* Removed standalone Documentation and Admin routes as they are now inside Layout */}

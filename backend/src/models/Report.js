@@ -4,7 +4,12 @@ const reportSchema = new mongoose.Schema({
     patientId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
-        required: false // Optional for now as we might not have full user system linked immediately
+        required: false
+    },
+    doctorId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: false
     },
     labId: {
         type: mongoose.Schema.Types.ObjectId,
@@ -18,7 +23,7 @@ const reportSchema = new mongoose.Schema({
     testType: {
         type: String,
         required: true,
-        enum: ['Blood Panel', 'Lipid Profile', 'Thyroid Profile', 'Liver Function Test', 'Kidney Function Test', 'Urinalysis', 'Other']
+        enum: ['Blood Panel', 'Lipid Profile', 'Thyroid Profile', 'Liver Function Test', 'Kidney Function Test', 'Urinalysis', 'Other', 'General Analysis']
     },
     rawData: {
         type: mongoose.Schema.Types.Mixed,

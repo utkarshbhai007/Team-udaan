@@ -28,12 +28,15 @@ async function getGroqCompletion(systemPrompt, userPrompt) {
 // 1. Report Generation Agent
 exports.generateReport = async (req, res) => {
     try {
-        const { patientName, testType, rawData } = req.body;
+        const { patientName, patientId, doctorId, labId, testType, rawData } = req.body;
         const startTime = new Date();
 
         // 1. Initial Report Entry
         let report = new Report({
             patientName,
+            patientId,
+            doctorId,
+            labId,
             testType,
             rawData,
             status: 'processing',
@@ -374,11 +377,56 @@ exports.coordinateCare = async (req, res) => {
     }
 };
 
+// Update a report (e.g., adding Care Plan)
+exports.updateReport = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updates = req.body;
+
+        const report = await Report.findByIdAndUpdate(id, updates, { new: true });
+
+        if (!report) {
+            return res.status(404).json({
+                success: false,
+                message: 'Report not found'
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: report
+        });
+    } catch (error) {
+        console.error('Update Report Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to update report',
+            error: error.message
+        });
+    }
+};
+
 exports.getReports = async (req, res) => {
     try {
-        const reports = await Report.find().sort({ createdAt: -1 });
-        res.json({ success: true, count: reports.length, data: reports });
+        const { patientId, doctorId } = req.query;
+        const query = {};
+
+        if (patientId) query.patientId = patientId;
+        if (doctorId) query.doctorId = doctorId;
+
+        const reports = await Report.find(query).sort({ createdAt: -1 });
+
+        res.status(200).json({
+            success: true,
+            count: reports.length,
+            data: reports
+        });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        console.error('Get Reports Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch reports',
+            error: error.message
+        });
     }
-}
+};

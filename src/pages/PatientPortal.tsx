@@ -20,6 +20,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { blockchainService } from '@/services/BlockchainService';
 import { openFDAService } from '@/services/OpenFDAService';
+import { pathologyAI } from '@/utils/apiService';
 
 const PatientPortal = () => {
   const navigate = useNavigate();
@@ -34,10 +35,14 @@ const PatientPortal = () => {
     lastVisit: '',
     nextAppointment: ''
   });
-
+  const [analysisData, setAnalysisData] = useState<any>(null);
   const [healthRecords, setHealthRecords] = useState<any[]>([]);
   const [aiInsights, setAiInsights] = useState<any[]>([]);
   const [medications, setMedications] = useState<any[]>([]);
+  const [selectedReport, setSelectedReport] = useState<any>(null); // For View Modal
+  const [overallHealthScore, setOverallHealthScore] = useState(0);
+  const [scoreTrend, setScoreTrend] = useState(0); // Difference from last report
+  const [nextAppointment, setNextAppointment] = useState('Not Scheduled');
 
   // Default "Zero" risk state to start
   const [riskAssessment, setRiskAssessment] = useState({
@@ -71,29 +76,77 @@ const PatientPortal = () => {
     initData();
   }, [user]);
 
-  // Polling for Records (Live Updates)
+  // Load minted record from localStorage on mount
+  useEffect(() => {
+    const stored = localStorage.getItem('currentPatientAnalysis');
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        setAnalysisData(parsed);
+      } catch (e) {
+        console.error('Failed to parse stored analysis', e);
+      }
+    }
+  }, []);
+
+  // Polling for Records (Live Updates) using Backend API
   useEffect(() => {
     if (!user) return;
 
-    const fetchRecords = () => {
+    const fetchRecords = async () => {
       try {
-        const records = blockchainService.getRecordsByPatient(user.uid);
+        // OLD: Blockchain Service
+        // const records = blockchainService.getRecordsByPatient(user.uid);
+
+        // NEW: Backend API Service
+        const reports = await pathologyAI.getReports({ patientId: user.uid });
+        console.log('✅ PatientPortal: Fetched reports', reports);
+
+        // Helper to calculate score dynamically if missing
+        const calculateScore = (analysis: any) => {
+          if (analysis?.riskAssessment?.score) return analysis.riskAssessment.score;
+          // Heuristic: Start at 100, deduct for risks
+          let score = 100;
+          const risks = analysis?.riskFactors || [];
+          score -= (risks.length * 10);
+          if (analysis?.status === 'flagged') score -= 15;
+          return Math.max(0, score); // Min 0
+        };
 
         // Map to UI
-        const mappedRecords = records.map((r: any) => ({
-          id: r.recordId,
-          date: new Date(r.timestamp).toLocaleDateString(),
-          type: r.fullData.testName || 'General Analysis',
-          status: r.fullData.riskAssessment?.level === 'High' ? 'Critical' :
-            r.fullData.riskAssessment?.level === 'Moderate' ? 'Attention Required' : 'Normal',
-          riskScore: r.fullData.riskAssessment?.score || 0,
-          fullData: r.fullData
-        }));
+        const mappedRecords = reports.map((r: any) => {
+          const score = calculateScore(r.aiAnalysis);
+          // Check for "Scheduled Followups" in Care Plan
+          const followups = r.aiAnalysis?.careCoordinator?.carePlan?.scheduledFollowups || [];
+          const nextAppt = followups.length > 0 ? followups[0] : null;
+
+          return {
+            id: r._id,
+            date: new Date(r.createdAt).toLocaleDateString(),
+            rawDate: new Date(r.createdAt), // For sorting
+            type: r.testType || 'General Analysis',
+            status: score < 60 ? 'Critical' : score < 80 ? 'Attention Required' : 'Normal',
+            riskScore: score,
+            fullData: r.aiAnalysis || {},
+            nextAppt: nextAppt
+          };
+        });
+
         setHealthRecords(mappedRecords);
 
-        if (records.length > 0) {
-          const latest = records[0].fullData;
-          const newInsights = latest.nextSteps?.map((step: any, i: number) => ({
+        if (mappedRecords.length > 0) {
+          // Sort by Date Descending
+          const sorted = [...mappedRecords].sort((a, b) => b.rawDate - a.rawDate);
+          const latest = sorted[0];
+          const previous = sorted.length > 1 ? sorted[1] : null;
+
+          // Update Top Level Stats
+          setOverallHealthScore(latest.riskScore);
+          setScoreTrend(previous ? latest.riskScore - previous.riskScore : 0);
+          if (latest.nextAppt) setNextAppointment(latest.nextAppt);
+
+          // Update Insights
+          const newInsights = latest.fullData.nextSteps?.map((step: any, i: number) => ({
             title: 'Action Item',
             message: typeof step === 'string' ? step : step.step,
             priority: 'high',
@@ -101,21 +154,22 @@ const PatientPortal = () => {
           })) || [];
           setAiInsights(newInsights);
 
-          const score = latest.riskAssessment?.score || 0;
+          // Update Risk Assessment Display
+          const score = latest.riskScore;
           setRiskAssessment({
-            diabetes: { risk: score > 50 ? 'MODERATE' : 'LOW', score: Math.round(score * 0.8), trend: 'STABLE', nextScreening: '6 months' },
-            cardiovascular: { risk: score > 70 ? 'HIGH' : 'LOW', score: score, trend: 'STABLE', nextScreening: '3 months' },
-            kidney: { risk: 'LOW', score: Math.round(score * 0.5), trend: 'STABLE', nextScreening: 'Annual' },
-            liver: { risk: 'LOW', score: Math.round(score * 0.4), trend: 'STABLE', nextScreening: 'Annual' }
+            diabetes: { risk: score < 70 ? 'MODERATE' : 'LOW', score: Math.round(100 - score * 0.2), trend: 'STABLE', nextScreening: '6 months' },
+            cardiovascular: { risk: score < 50 ? 'HIGH' : 'LOW', score: Math.round(100 - score * 0.4), trend: 'STABLE', nextScreening: 'Annual' },
+            kidney: { risk: 'LOW', score: Math.round(100 - score * 0.1), trend: 'STABLE', nextScreening: 'Annual' },
+            liver: { risk: 'LOW', score: Math.round(100 - score * 0.1), trend: 'STABLE', nextScreening: 'Annual' }
           });
         }
-      } catch (error) {
-        console.error("Auto-fetch failed", error);
+      } catch (e) {
+        console.error("Failed to fetch records", e);
       }
     };
 
-    fetchRecords(); // Initial call
-    const interval = setInterval(fetchRecords, 5000); // 5s Polling
+    fetchRecords();
+    const interval = setInterval(fetchRecords, 10000); // Poll every 10s
     return () => clearInterval(interval);
   }, [user]);
   const getRiskColor = (risk: string) => {
@@ -169,6 +223,17 @@ const PatientPortal = () => {
           </div>
         </div>
 
+        {/* Minted Record Overview */}
+        {analysisData && (
+          <div className="mt-6 p-4 bg-gray-50 rounded-lg border">
+            <h3 className="text-lg font-semibold mb-2">Minted Record Overview</h3>
+            <p className="text-sm">Record ID: {analysisData.blockchainRecord?.recordId || 'N/A'}</p>
+            <p className="text-sm">Patient: {analysisData.patientInfo?.name || 'Unknown'}</p>
+            <pre className="mt-2 text-xs bg-white p-2 rounded overflow-x-auto">
+              {JSON.stringify(analysisData.analysis, null, 2)}
+            </pre>
+          </div>
+        )}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
@@ -187,9 +252,11 @@ const PatientPortal = () => {
                   <Heart className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-green-600">85/100</div>
+                  <div className={`text-2xl font-bold ${overallHealthScore >= 80 ? 'text-green-600' : overallHealthScore >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
+                    {overallHealthScore}/100
+                  </div>
                   <p className="text-xs text-muted-foreground">
-                    Good health status
+                    {overallHealthScore >= 80 ? 'Excellent' : 'Needs Attention'}
                   </p>
                 </CardContent>
               </Card>
@@ -226,9 +293,9 @@ const PatientPortal = () => {
                   <Calendar className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">Feb 15</div>
+                  <div className="text-xl font-bold truncate" title={nextAppointment}>{nextAppointment}</div>
                   <p className="text-xs text-muted-foreground">
-                    Follow-up visit
+                    Upcoming
                   </p>
                 </CardContent>
               </Card>
@@ -328,11 +395,21 @@ const PatientPortal = () => {
                           {record.status}
                         </Badge>
                         <div className="flex space-x-2">
-                          <Button size="sm" variant="outline">
+                          <Button size="sm" variant="outline" onClick={() => setSelectedReport(record)}>
                             <Eye className="h-4 w-4 mr-2" />
                             View
                           </Button>
-                          <Button size="sm" variant="outline">
+                          <Button size="sm" variant="outline" onClick={() => {
+                            const blob = new Blob([JSON.stringify(record.fullData, null, 2)], { type: 'application/json' });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `Report-${record.id}.json`;
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            URL.revokeObjectURL(url);
+                          }}>
                             <Download className="h-4 w-4 mr-2" />
                             Download
                           </Button>
@@ -340,6 +417,59 @@ const PatientPortal = () => {
                       </div>
                     </div>
                   ))}
+
+                  {/* REPORT VIEW MODAL (Simple Overlay) */}
+                  {selectedReport && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                      <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                        <div className="p-6 border-b flex justify-between items-center sticky top-0 bg-white">
+                          <h2 className="text-xl font-bold">Health Report Details</h2>
+                          <Button variant="ghost" size="sm" onClick={() => setSelectedReport(null)}>✕ Close</Button>
+                        </div>
+                        <div className="p-6">
+                          <p className="text-sm font-mono bg-gray-100 p-2 rounded mb-4">Report ID: {selectedReport.id}</p>
+
+                          {/* Diagnosis */}
+                          {selectedReport.fullData.diagnosis?.length > 0 && (
+                            <div className="mb-6">
+                              <h3 className="font-bold text-lg mb-2">Diagnosis</h3>
+                              {selectedReport.fullData.diagnosis.map((d: any, i: number) => (
+                                <div key={i} className="mb-2 p-3 bg-blue-50 border border-blue-100 rounded">
+                                  <p className="font-semibold text-blue-900">{d.condition}</p>
+                                  <p className="text-sm">{d.description}</p>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Care Plan */}
+                          {selectedReport.fullData.careCoordinator?.carePlan && (
+                            <div className="mb-6">
+                              <h3 className="font-bold text-lg mb-2 text-green-700">Care Plan</h3>
+                              <div className="p-4 bg-green-50 border border-green-100 rounded">
+                                <p className="text-sm font-medium mb-2">{selectedReport.fullData.careCoordinator.carePlan.summary}</p>
+
+                                <h4 className="text-xs font-bold uppercase mt-2">Actions</h4>
+                                <ul className="list-disc pl-5 text-sm">
+                                  {selectedReport.fullData.careCoordinator.carePlan.immediateActions.map((act: string, i: number) => <li key={i}>{act}</li>)}
+                                </ul>
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="mt-4">
+                            <h4 className="font-bold text-sm text-gray-500 mb-2">Full Analysis Data</h4>
+                            <pre className="text-xs bg-gray-900 text-green-400 p-4 rounded overflow-auto max-h-64">
+                              {JSON.stringify(selectedReport.fullData, null, 2)}
+                            </pre>
+                          </div>
+                        </div>
+                        <div className="p-4 border-t bg-gray-50 text-right">
+                          <Button onClick={() => setSelectedReport(null)}>Close</Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -410,10 +540,30 @@ const PatientPortal = () => {
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <span className="text-sm">Current Score</span>
-                      <span className="font-medium text-green-600">85/100</span>
+                      <span className="font-medium text-green-600">{overallHealthScore}/100</span>
                     </div>
-                    <Progress value={85} className="h-3" />
-                    <p className="text-xs text-green-600">↑ 5 points improvement this month</p>
+                    <Progress value={overallHealthScore} className="h-3" />
+                    <p className={`text-xs ${scoreTrend >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {scoreTrend >= 0 ? '↑' : '↓'} {Math.abs(scoreTrend)} points {scoreTrend >= 0 ? 'improvement' : 'decline'} since last report
+                    </p>
+
+                    {/* Tiny Trend Graph */}
+                    <div className="mt-4 pt-4 border-t">
+                      <p className="text-xs text-gray-400 mb-2">History</p>
+                      <div className="flex items-end gap-1 h-16">
+                        {healthRecords.slice(0, 5).reverse().map((rec: any, i: number) => (
+                          <div key={i} className="flex-1 bg-blue-100 rounded-t hover:bg-blue-200 relative group">
+                            <div
+                              style={{ height: `${rec.riskScore}%` }}
+                              className={`w-full rounded-t ${rec.riskScore >= 80 ? 'bg-green-400' : 'bg-yellow-400'}`}
+                            ></div>
+                            <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-black text-white text-[10px] px-1 rounded opacity-0 group-hover:opacity-100">
+                              {rec.riskScore}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>

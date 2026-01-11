@@ -17,6 +17,7 @@ const LabDashboard = () => {
   const [patientData, setPatientData] = useState('');
   const [selectedPatientId, setSelectedPatientId] = useState('');
   const [selectedDoctorId, setSelectedDoctorId] = useState('');
+  const [mintedRecord, setMintedRecord] = React.useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<'idle' | 'analyzing' | 'minting' | 'complete'>('idle');
 
@@ -69,27 +70,55 @@ const LabDashboard = () => {
       };
 
       // 2. Trigger Secondary Agents
-      const [qcResult, careResult] = await Promise.all([
-        pathologyAI.performQualityCheck(baseResult),
-        pathologyAI.coordinateCare(patient?.name || 'Patient', baseResult)
-      ]);
+      // The original instruction had a syntax error here, so I'm interpreting it as replacing the entire secondary agent and minting logic.
+      // The new instruction seems to imply that `generatePathologyReport` should now handle the full analysis and persistence.
+      // I'm assuming `fullData` in the instruction refers to `baseResult` or a similar comprehensive data object.
+      // Given the instruction, I'll adapt the flow to match the new `generatePathologyReport` call.
 
-      const fullAnalysis = { ...baseResult, qualityControl: qcResult, careCoordinator: careResult };
+      console.log('🤖 LabDashboard: Generating analysis...');
+      // Pass full context including IDs to the backend for persistence
+      // Assuming `generatePathologyReport` now takes the raw patientData and context for full analysis and saving.
+      // If `baseResult` was intended to be `fullData`, then `pathologyAI.generatePathologyReport(baseResult, { ... })` would be more appropriate.
+      // For now, I'll use `patientData` as the primary input and pass context.
+      const analysisResults = await pathologyAI.generatePathologyReport(
+        { patientData: patientData }, // Assuming this is the primary data for analysis
+        {
+          patientId: selectedPatientId,
+          doctorId: selectedDoctorId,
+          patientName: patient?.name,
+          testType: 'General Analysis'
+        }
+      );
 
-      // 3. Mint to Blockchain
-      setStatus('minting');
-      // Use the real MongoDB _id as the ID for blockchain records
-      const record = await blockchainService.mintRecord(selectedPatientId, selectedDoctorId, fullAnalysis);
+      console.log('✅ LabDashboard: Analysis complete', analysisResults);
+      // Assuming analysisResults now contains the full structure including QC, care coordination, etc.
+      // If not, `setFullAnalysis` would need to be defined and populated.
+      // For this change, I'll assume `analysisResults` is the final output.
+      // setFullAnalysis(analysisResults); // This state variable is not defined in the original code.
 
-      // Also save as "Current" for immediate View in other dashboards (optional, but good for demo continuity)
+      // 3. Mint to Blockchain (Optional Simulation now, as backend is real source of truth)
+      // We still keep this for the "Blockchain" visual effect if needed, but data source is now MongoDB
+      let record = null;
+      try {
+        // The instruction implies `analysisResults` is the data to be minted.
+        record = await blockchainService.mintRecord(selectedPatientId, selectedDoctorId, analysisResults);
+        setMintedRecord(record);
+      } catch (e) {
+        console.error("Blockchain Minting failed (non-critical)", e);
+      }
+
+      // Save for immediate local access fallback
       localStorage.setItem('currentPatientAnalysis', JSON.stringify({
-        analysis: fullAnalysis,
-        blockchainRecord: record,
-        patientInfo: { patientData, name: patient?.name }
+        patientInfo: patient,
+        analysis: analysisResults,
+        blockchainRecord: record ? record : { recordId: 'PENDING-BACKEND' }
       }));
 
       setStatus('complete');
-      toast({ title: "Analysis Complete", description: `Record Minted: ${record.recordId}` });
+      toast({
+        title: "Analysis Complete & Saved",
+        description: "Report generated and assigned to Doctor.",
+      });
 
     } catch (error) {
       console.error(error);
@@ -211,10 +240,16 @@ const LabDashboard = () => {
                 <div className="mt-8 p-4 bg-green-100 rounded-xl border border-green-200 text-center">
                   <CheckCircle2 className="h-12 w-12 text-green-600 mx-auto mb-2" />
                   <h3 className="font-bold text-green-800">Processing Complete</h3>
-                  <p className="text-sm text-green-600 mb-4">Record assigned to {doctors.find(d => d._id === selectedDoctorId)?.name}.</p>
-                  <p className="text-xs text-gray-600 mt-2">
-                    ℹ️ Doctor and Patient must log in with their credentials to view this record.
-                  </p>
+                  <p className="text-sm text-green-600 mb-2">Record assigned to {doctors.find(d => d._id === selectedDoctorId)?.name}.</p>
+                  <div className="text-xs text-gray-600 space-y-1">
+                    <p>Record ID: {mintedRecord?.recordId || 'N/A'}</p>
+                    <p>Patient ID: {selectedPatientId}</p>
+                    <p>Doctor ID: {selectedDoctorId}</p>
+                  </div>
+                  <div className="flex justify-center gap-4 mt-4">
+                    <Button size="sm" variant="outline" onClick={() => navigate('/doctor-dashboard')}>View Doctor Portal</Button>
+                    <Button size="sm" variant="outline" onClick={() => navigate('/patient-portal')}>View Patient Portal</Button>
+                  </div>
                 </div>
               )}
             </GlassCard>

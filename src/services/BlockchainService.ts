@@ -22,15 +22,23 @@ export const MOCK_DOCTORS = [
 ];
 
 class BlockchainService {
-    private records: BlockchainRecord[] = [];
-
-    constructor() {
-        // Load from local storage if available
-        const saved = localStorage.getItem('medgenius_blockchain_records');
-        if (saved) {
-            this.records = JSON.parse(saved);
+    // Helper to get fresh data directly from storage
+    private getStoredRecords(): BlockchainRecord[] {
+        try {
+            const saved = localStorage.getItem('medgenius_blockchain_records');
+            return saved ? JSON.parse(saved) : [];
+        } catch (e) {
+            console.error("Failed to load records", e);
+            return [];
         }
     }
+
+    // Helper to save data directly to storage
+    private setStoredRecords(records: BlockchainRecord[]) {
+        localStorage.setItem('medgenius_blockchain_records', JSON.stringify(records));
+    }
+
+    constructor() { }
 
     // Simulate hashing data using Web Crypto API
     async hashData(data: any): Promise<string> {
@@ -49,8 +57,8 @@ class BlockchainService {
 
         const newRecord: BlockchainRecord = {
             recordId: `MG-${Math.floor(Math.random() * 1000000).toString(16).toUpperCase()}`,
-            patientId,
-            assignedDoctorId,
+            patientId: String(patientId),
+            assignedDoctorId: String(assignedDoctorId),
             dataHash,
             timestamp: new Date().toISOString(),
             status: 'Verified',
@@ -58,25 +66,34 @@ class BlockchainService {
             fullData: data // Persist full data for the demo
         };
 
-        this.records.push(newRecord);
-        this.save();
+        // Read, Append, Write
+        const currentRecords = this.getStoredRecords();
+        currentRecords.push(newRecord);
+        this.setStoredRecords(currentRecords);
+
+        console.log("✅ BlockchainService: Minted and Saved.", newRecord);
         return newRecord;
     }
 
     getRecord(recordId: string) {
-        return this.records.find(r => r.recordId === recordId);
+        const records = this.getStoredRecords();
+        return records.find(r => r.recordId === recordId);
     }
 
     getAllRecords() {
-        return this.records;
+        return this.getStoredRecords();
     }
 
     getRecordsByPatient(patientId: string) {
-        return this.records.filter(r => r.patientId === patientId).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        const records = this.getStoredRecords();
+        console.log(`Searching records for patient: ${patientId}. Total records: ${records.length}`);
+        return records.filter(r => r.patientId === patientId).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
     }
 
     getRecordsByDoctor(doctorId: string) {
-        return this.records.filter(r => r.assignedDoctorId === doctorId).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        const records = this.getStoredRecords();
+        console.log(`Searching records for doctor: ${doctorId}. Total records: ${records.length}`);
+        return records.filter(r => r.assignedDoctorId === doctorId).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
     }
 
     getRegisteredUsers() {
@@ -85,10 +102,6 @@ class BlockchainService {
 
     getRegisteredDoctors() {
         return MOCK_DOCTORS;
-    }
-
-    private save() {
-        localStorage.setItem('medgenius_blockchain_records', JSON.stringify(this.records));
     }
 }
 

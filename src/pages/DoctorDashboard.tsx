@@ -17,7 +17,40 @@ const DoctorDashboard = () => {
   const [doctors, setDoctors] = React.useState<any[]>([]);
   const [doctorId, setDoctorId] = React.useState('');
   const [isEditingPlan, setIsEditingPlan] = React.useState(false);
+  const [analysisData, setAnalysisData] = React.useState<any>(null);
   const [records, setRecords] = React.useState<any[]>([]);
+  const [isGeneratingPlan, setIsGeneratingPlan] = React.useState(false);
+
+  // Render analysis block
+  const renderAnalysis = () => {
+    if (!analysisData) return null;
+    const { blockchainRecord, analysis, patientInfo } = analysisData;
+    return (
+      <GlassCard className="mt-6">
+        <h3 className="text-lg font-semibold mb-2">Minted Record Overview</h3>
+        <p className="text-sm">Record ID: {blockchainRecord?.recordId || 'N/A'}</p>
+        <p className="text-sm">Patient: {patientInfo?.name || 'Unknown'}</p>
+        <pre className="mt-2 text-xs bg-gray-100 p-2 rounded overflow-x-auto">
+          {JSON.stringify(analysis, null, 2)}
+        </pre>
+      </GlassCard>
+    );
+  };
+
+  // Inside return JSX, after header
+  // Insert {renderAnalysis()} before the list view
+
+  React.useEffect(() => {
+    const stored = localStorage.getItem('currentPatientAnalysis');
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        setAnalysisData(parsed);
+      } catch (e) {
+        console.error('Failed to parse stored analysis', e);
+      }
+    }
+  }, []);
 
   // Fetch doctors on mount
   React.useEffect(() => {
@@ -40,13 +73,31 @@ const DoctorDashboard = () => {
 
   // Auto-fetch records every 5 seconds
   React.useEffect(() => {
-    const fetchRecords = () => {
+    const fetchRecords = async () => {
       if (doctorId) {
-        const recs = blockchainService.getRecordsByDoctor(doctorId);
-        // Simple check to avoid infinite re-renders if deep comparison is needed, 
-        // but for now strictly setting state is fine as it's a demo.
-        // To be safer, we could JSON.stringify compare, but let's just set it.
-        setRecords(recs);
+        console.log('🔍 DoctorDashboard: Fetching reports for doctorId:', doctorId);
+
+        // OLD: Blockchain Service
+        // const recs = blockchainService.getRecordsByDoctor(doctorId);
+
+        // NEW: Backend API Service
+        const reports = await pathologyAI.getReports({ doctorId });
+        console.log('📋 Backend Reports Found:', reports.length, reports);
+
+        // Map Backend Report -> Dashboard Record Format
+        const mappedRecords = reports.map((r: any) => ({
+          recordId: r._id,
+          patientId: r.patientId,
+          assignedDoctorId: r.doctorId,
+          timestamp: r.createdAt,
+          status: 'Verified',
+          fullData: r.aiAnalysis || {}, // The analysis is stored here
+          // Keep other fields for compatibility
+          dataHash: 'BACKEND-VERIFIED',
+          blockHeight: 0
+        }));
+
+        setRecords(mappedRecords);
       }
     };
 
@@ -97,6 +148,7 @@ const DoctorDashboard = () => {
           </div>
         </div>
 
+        {renderAnalysis()}
         {view === 'list' && (
           <div className="grid grid-cols-1 gap-6">
             <GlassCard>
@@ -104,8 +156,11 @@ const DoctorDashboard = () => {
                 <Stethoscope className="h-5 w-5 text-blue-600" /> Pending Reviews
               </h2>
               {records.length === 0 ? (
-                <div className="text-center py-10 text-gray-400">
-                  No patients assigned yet. Check Lab Dashboard.
+                <div className="text-center py-12 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                  <p className="text-gray-500 mb-2">No patients assigned yet.</p>
+                  <p className="text-xs text-gray-400">
+                    (Backend fetched 0 records. Please run analysis in Lab Dashboard first.)
+                  </p>
                 </div>
               ) : (
                 <div className="divide-y">
@@ -296,8 +351,46 @@ const DoctorDashboard = () => {
                     </div>
                   ) : (
                     <div className="flex flex-col items-center justify-center h-48 text-gray-400">
-                      <FileText className="h-10 w-10 mb-2 opacity-50" />
-                      <p>No care plan generated yet.</p>
+                      <FileText className="h-10 w-10 mb-4 opacity-50" />
+                      <p className="mb-4">No care plan generated yet.</p>
+                      <Button
+                        onClick={async () => {
+                          setIsGeneratingPlan(true);
+                          try {
+                            const carePlanResult = await pathologyAI.coordinateCare(selectedRecord.patientId, selectedRecord.fullData);
+
+                            // Merge into fullData
+                            const updatedFullData = {
+                              ...selectedRecord.fullData,
+                              careCoordinator: carePlanResult
+                            };
+
+                            // Save to Backend
+                            await pathologyAI.updateReport(selectedRecord.recordId, {
+                              aiAnalysis: updatedFullData
+                            });
+
+                            // Update Local State
+                            setSelectedRecord({
+                              ...selectedRecord,
+                              fullData: updatedFullData
+                            });
+
+                            // Update in list
+                            setRecords(prev => prev.map(r => r.recordId === selectedRecord.recordId ? { ...r, fullData: updatedFullData } : r));
+
+                            alert("Care Plan Generated & Saved!");
+                          } catch (e) {
+                            console.error(e);
+                            alert("Failed to generate plan");
+                          } finally {
+                            setIsGeneratingPlan(false);
+                          }
+                        }}
+                        disabled={isGeneratingPlan}
+                      >
+                        {isGeneratingPlan ? 'Generating with AI...' : 'Generate Care Plan Now'}
+                      </Button>
                     </div>
                   )}
                 </GlassCard>
@@ -305,6 +398,47 @@ const DoctorDashboard = () => {
             </div>
           </div>
         )}
+
+        {/* DEBUG SECTION */}
+        <div className="mt-12 p-4 bg-gray-100 border-2 border-dashed border-gray-400 rounded-xl">
+          <h3 className="font-bold text-red-600 mb-2">🔧 DEBUG: RAW BLOCKCHAIN DATA</h3>
+          <Button
+            size="sm"
+            variant="outline"
+            className="mb-4"
+            onClick={() => {
+              const all = blockchainService.getAllRecords();
+              console.log('ALL RECORDS:', all);
+              alert('Check Console for full records');
+            }}
+          >
+            Log All Records to Console
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full mb-2 bg-red-50 text-red-700 hover:bg-red-100"
+            onClick={async () => {
+              console.log("🕵️‍♂️ Debug: Fetching ALL reports from DB (no filter)...");
+              const allReports = await pathologyAI.getReports({});
+              console.log("📊 ALL DB REPORTS:", allReports);
+              alert(`Found ${allReports.length} total reports in DB.\nCheck Console for details.`);
+            }}
+          >
+            🕵️‍♂️ Debug: Check Database for ANY Reports
+          </Button>
+
+          <div className="text-xs font-mono text-gray-700 bg-white p-2 border mb-2 rounded">
+            <strong>Current Logged In User:</strong><br />
+            UID: {user?.uid || 'Not Logged In'}<br />
+            Role: {user?.role || 'N/A'}<br />
+            Name: {user?.name || 'N/A'}
+          </div>
+          <div className="text-xs font-mono whitespace-pre-wrap bg-white p-2 h-64 overflow-auto border">
+            {JSON.stringify(blockchainService.getAllRecords(), null, 2)}
+          </div>
+        </div>
       </div>
     </PageContainer>
   );
