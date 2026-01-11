@@ -23,15 +23,20 @@ const allowedOrigins = [
   'http://localhost:8081',
   'http://localhost:8082',
   'http://localhost:8083',
+  'http://localhost:5173', // Vite default
+  'http://localhost:3000', // React default
   'https://medgenius-ai-production.up.railway.app'
 ];
 
 app.use(cors({
-  origin: function(origin, callback) {
+  origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
-    
+
     if (allowedOrigins.indexOf(origin) === -1) {
+      // detailed error for debugging
+      console.log('BLOCKED CORS ORIGIN:', origin);
+      // For development, we can be more permissive if needed, but let's strictly add the port first.
       const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
       return callback(new Error(msg), false);
     }
@@ -48,20 +53,23 @@ app.use(express.json());
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
+  res.json({
+    status: 'ok',
     message: 'Backend is running',
     timestamp: new Date().toISOString()
   });
 });
 
 // Routes
+// Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/ai', require('./routes/ai'));
+app.use('/api/reports', require('./routes/reports'));
 
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error('Error:', err.stack);
-  res.status(500).json({ 
+  res.status(500).json({
     message: 'Something went wrong!',
     error: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
   });
@@ -97,4 +105,4 @@ connectDB().then(() => {
   }).on('error', (error) => {
     console.error('Server error:', error);
   });
-}); 
+});

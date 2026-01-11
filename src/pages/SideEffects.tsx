@@ -28,11 +28,11 @@ const SideEffects = () => {
   const getDrugInfo = async (drugName: string) => {
     try {
       console.log(`Fetching information for drug: ${drugName}`);
-      
+
       const systemMessage = `You are a medical AI assistant specialized in pharmaceutical knowledge. 
       Provide detailed, accurate information about medications, including their clinical uses, mechanisms, 
       and safety profiles. Format your response in JSON.`;
-      
+
       const prompt = `Provide comprehensive information about the drug ${drugName}. Include:
       1. Generic and brand names
       2. Drug class and mechanism of action
@@ -69,7 +69,7 @@ const SideEffects = () => {
         };
         return result;
       }
-      
+
       throw new Error("Invalid API response format");
     } catch (error) {
       console.error("Error retrieving drug information:", error);
@@ -91,21 +91,21 @@ const SideEffects = () => {
     setProgress(0);
     setDrugInfo(null);
     setSideEffects([]);
-    
+
     const interval = setInterval(() => {
       setProgress(prev => Math.min(90, prev + 10));
     }, 300);
-    
+
     try {
       // First, get drug information
       const drugInfoResult = await getDrugInfo(drugName);
       setDrugInfo(drugInfoResult);
-      
+
       // Then, get detailed side effects
       const systemMessage = `You are a medical AI assistant specialized in analyzing drug side effects. 
       Provide detailed, evidence-based information about medication side effects, including their likelihood, 
       severity, and management strategies. Format your response in JSON.`;
-      
+
       const prompt = `Analyze and provide detailed information about the side effects of ${drugName}. 
       Include common and significant side effects, their probability of occurrence, severity levels, 
       and management approaches.
@@ -125,7 +125,7 @@ const SideEffects = () => {
       
       Base your response on clinical data and medical literature. Include both common and serious side effects.`;
 
-      const response = await pathologyAI.checkMedicationSafety(medications, {});
+      const response = await pathologyAI.checkMedicationSafety([drugName], {});
 
       if (response && response.aiAnalysis) {
         // Convert PathologyAI response to expected format
@@ -133,14 +133,14 @@ const SideEffects = () => {
         setSideEffects(Array.isArray(result) ? result : []);
         setShowResults(true);
         setProgress(100);
-        
+
         // Track the side effects prediction
         ActivityService.addActivity(
           'analysis',
           `Side effects analysis for ${drugName}`,
           `Found ${Array.isArray(result) ? result.length : 0} potential side effects`
         );
-        
+
         toast({
           title: "Analysis complete",
           description: "Drug information and side effect analysis has been completed successfully.",
@@ -150,14 +150,14 @@ const SideEffects = () => {
       }
     } catch (error) {
       console.error("Error in prediction:", error);
-      
+
       // Track the failed analysis
       ActivityService.addActivity(
         'analysis',
         `Failed side effects analysis for ${drugName}`,
         `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
-      
+
       toast({
         title: "Error",
         description: "An error occurred during the analysis. Please try again.",
@@ -183,16 +183,16 @@ const SideEffects = () => {
     setProgress(0);
     setInteractions([]);
     setShowResults(false);
-    
+
     const interval = setInterval(() => {
       setProgress(prev => Math.min(90, prev + 10));
     }, 300);
-    
+
     try {
       const systemMessage = `You are a medical AI assistant specialized in analyzing drug interactions. 
       Provide detailed, evidence-based information about potential interactions between medications, 
       including their mechanisms, clinical significance, and management strategies. Format your response in JSON.`;
-      
+
       const prompt = `Analyze potential drug interactions between ${interactionDrugs[0]} and ${interactionDrugs[1]}. 
       Include:
       1. Type and mechanism of interaction
@@ -224,14 +224,14 @@ const SideEffects = () => {
         setInteractions(Array.isArray(result) ? result : [result]);
         setShowResults(true);
         setProgress(100);
-        
+
         // Track the interaction check
         ActivityService.addActivity(
           'analysis',
           `Drug interaction check: ${interactionDrugs[0]} + ${interactionDrugs[1]}`,
           `Found ${Array.isArray(result) ? result.length : 1} interaction(s)`
         );
-        
+
         toast({
           title: "Interaction check complete",
           description: "Drug interaction analysis has been completed successfully.",
@@ -241,14 +241,14 @@ const SideEffects = () => {
       }
     } catch (error) {
       console.error("Error in interaction check:", error);
-      
+
       // Track the failed interaction check
       ActivityService.addActivity(
         'analysis',
         `Failed drug interaction check: ${interactionDrugs[0]} + ${interactionDrugs[1]}`,
         `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
-      
+
       toast({
         variant: "destructive",
         title: "Error",
@@ -267,17 +267,17 @@ const SideEffects = () => {
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
-      
+
       // Add header
       pdf.setFontSize(24);
       pdf.setTextColor(44, 62, 80);
       pdf.text(activeTab === 'side-effects' ? 'Drug Side Effects Report' : 'Drug Interactions Report', pdfWidth / 2, 20, { align: 'center' });
-      
+
       // Add timestamp
       pdf.setFontSize(10);
       pdf.setTextColor(128, 128, 128);
       pdf.text(`Generated on: ${new Date().toLocaleString()}`, pdfWidth / 2, 30, { align: 'center' });
-      
+
       let yPos = 50;
 
       if (activeTab === 'side-effects') {
@@ -291,7 +291,7 @@ const SideEffects = () => {
 
           pdf.setFontSize(12);
           pdf.setFont(undefined, 'normal');
-          
+
           // Drug name and generic name
           pdf.text(`Name: ${drugInfo.name || drugName}`, 20, yPos);
           yPos += 7;
@@ -407,21 +407,21 @@ const SideEffects = () => {
       pdf.setFontSize(10);
       pdf.setTextColor(128, 128, 128);
       pdf.text('Generated by PathologyAI Hub', pdfWidth / 2, pdfHeight - 10, { align: 'center' });
-      
+
       // Save the PDF
-      const fileName = activeTab === 'side-effects' 
+      const fileName = activeTab === 'side-effects'
         ? `${drugName.toLowerCase().replace(/\s+/g, '_')}_side_effects.pdf`
         : `${interactionDrugs[0].toLowerCase().replace(/\s+/g, '_')}_${interactionDrugs[1].toLowerCase().replace(/\s+/g, '_')}_interactions.pdf`;
-      
+
       pdf.save(fileName);
-      
+
       // Track the PDF generation
       ActivityService.addActivity(
         'download',
         `Generated report: ${activeTab === 'side-effects' ? drugName : `${interactionDrugs[0]} + ${interactionDrugs[1]}`}`,
         `Report type: ${activeTab === 'side-effects' ? 'Side Effects' : 'Drug Interactions'}`
       );
-      
+
       toast({
         title: "Report Generated",
         description: "Your analysis report has been downloaded successfully.",
@@ -460,19 +460,19 @@ const SideEffects = () => {
                   <TabsTrigger value="side-effects" className="px-2 text-xs sm:text-sm md:text-base">Side Effect Prediction</TabsTrigger>
                   <TabsTrigger value="interactions" className="px-2 text-xs sm:text-sm md:text-base">Drug Interactions</TabsTrigger>
                 </TabsList>
-                
+
                 <TabsContent value="side-effects" className="space-y-4">
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium mb-1">Drug Name</label>
-                      <Input 
-                        placeholder="Enter drug name (e.g., Lisinopril)" 
+                      <Input
+                        placeholder="Enter drug name (e.g., Lisinopril)"
                         value={drugName}
                         onChange={(e) => setDrugName(e.target.value)}
                       />
                     </div>
-                    <Button 
-                      className="w-full" 
+                    <Button
+                      className="w-full"
                       onClick={handlePrediction}
                       disabled={isLoading}
                     >
@@ -488,7 +488,7 @@ const SideEffects = () => {
                         </>
                       )}
                     </Button>
-                    
+
                     {isLoading && (
                       <div className="space-y-2">
                         <div className="flex justify-between text-xs mb-1">
@@ -500,27 +500,27 @@ const SideEffects = () => {
                     )}
                   </div>
                 </TabsContent>
-                
+
                 <TabsContent value="interactions" className="space-y-4">
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium mb-1">Drug 1</label>
-                      <Input 
-                        placeholder="Enter first drug name" 
+                      <Input
+                        placeholder="Enter first drug name"
                         value={interactionDrugs[0]}
                         onChange={(e) => setInteractionDrugs([e.target.value, interactionDrugs[1]])}
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium mb-1">Drug 2</label>
-                      <Input 
-                        placeholder="Enter second drug name" 
+                      <Input
+                        placeholder="Enter second drug name"
                         value={interactionDrugs[1]}
                         onChange={(e) => setInteractionDrugs([interactionDrugs[0], e.target.value])}
                       />
                     </div>
-                    <Button 
-                      className="w-full" 
+                    <Button
+                      className="w-full"
                       onClick={handleInteractionCheck}
                       disabled={isLoading}
                     >
@@ -536,7 +536,7 @@ const SideEffects = () => {
                         </>
                       )}
                     </Button>
-                    
+
                     {isLoading && (
                       <div className="space-y-2">
                         <div className="flex justify-between text-xs mb-1">
@@ -563,7 +563,7 @@ const SideEffects = () => {
                     Download PDF
                   </Button>
                 </div>
-                
+
                 {drugInfo && activeTab === "side-effects" && (
                   <div className="mb-8 animate-fadeIn">
                     <GlassCard className="p-6 border-primary/10 bg-gradient-to-r from-blue-50 to-white">
@@ -580,7 +580,7 @@ const SideEffects = () => {
                               )}
                             </div>
                           </div>
-                          
+
                           <div className="space-y-4">
                             {drugInfo.drugClass && (
                               <div>
@@ -588,21 +588,21 @@ const SideEffects = () => {
                                 <p className="font-medium">{drugInfo.drugClass}</p>
                               </div>
                             )}
-                            
+
                             {drugInfo.description && (
                               <div>
                                 <h4 className="text-sm font-medium text-muted-foreground">Description</h4>
                                 <p>{drugInfo.description}</p>
                               </div>
                             )}
-                            
+
                             {drugInfo.mechanism && (
                               <div>
                                 <h4 className="text-sm font-medium text-muted-foreground">Mechanism of Action</h4>
                                 <p>{drugInfo.mechanism}</p>
                               </div>
                             )}
-                            
+
                             {drugInfo.commonDosage && (
                               <div>
                                 <h4 className="text-sm font-medium text-muted-foreground">Common Dosage</h4>
@@ -611,7 +611,7 @@ const SideEffects = () => {
                             )}
                           </div>
                         </div>
-                        
+
                         <div className="flex-1">
                           {drugInfo.usedFor && Array.isArray(drugInfo.usedFor) && drugInfo.usedFor.length > 0 && (
                             <div className="mb-4">
@@ -625,7 +625,7 @@ const SideEffects = () => {
                               </div>
                             </div>
                           )}
-                          
+
                           {drugInfo.warnings && Array.isArray(drugInfo.warnings) && drugInfo.warnings.length > 0 && (
                             <div className="mb-4">
                               <h4 className="text-sm font-medium text-muted-foreground mb-2">Warnings</h4>
@@ -641,7 +641,7 @@ const SideEffects = () => {
                               </div>
                             </div>
                           )}
-                          
+
                           {drugInfo.interactions && Array.isArray(drugInfo.interactions) && drugInfo.interactions.length > 0 && (
                             <div>
                               <h4 className="text-sm font-medium text-muted-foreground mb-2">Common Interactions</h4>
@@ -662,32 +662,30 @@ const SideEffects = () => {
                     </GlassCard>
                   </div>
                 )}
-                
+
                 <div className="w-full">
                   {activeTab === "side-effects" && sideEffects.length > 0 && (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {sideEffects.map((effect, index) => (
                         <GlassCard key={index} className="p-6 hover:shadow-md transition-shadow bg-blue-50/50 border border-blue-100">
                           <div className="flex items-start gap-4">
-                            <div className={`rounded-full p-2 ${
-                              effect.probability > 0.6 
-                                ? "bg-red-50 text-red-600" 
-                                : effect.probability > 0.4 
-                                  ? "bg-yellow-50 text-yellow-600" 
+                            <div className={`rounded-full p-2 ${effect.probability > 0.6
+                                ? "bg-red-50 text-red-600"
+                                : effect.probability > 0.4
+                                  ? "bg-yellow-50 text-yellow-600"
                                   : "bg-green-50 text-green-600"
-                            }`}>
+                              }`}>
                               <ShieldAlert className="h-5 w-5" />
                             </div>
                             <div className="flex-1">
                               <div className="flex justify-between items-start mb-2">
                                 <h3 className="font-semibold text-lg">{effect.name}</h3>
-                                <span className={`text-sm font-medium px-2 py-1 rounded-full ${
-                                  effect.probability > 0.6 
-                                    ? "bg-red-50 text-red-600" 
-                                    : effect.probability > 0.4 
-                                      ? "bg-yellow-50 text-yellow-600" 
+                                <span className={`text-sm font-medium px-2 py-1 rounded-full ${effect.probability > 0.6
+                                    ? "bg-red-50 text-red-600"
+                                    : effect.probability > 0.4
+                                      ? "bg-yellow-50 text-yellow-600"
                                       : "bg-green-50 text-green-600"
-                                }`}>
+                                  }`}>
                                   {Math.round(effect.probability * 100)}%
                                 </span>
                               </div>
@@ -703,19 +701,18 @@ const SideEffects = () => {
                       ))}
                     </div>
                   )}
-                  
+
                   {activeTab === "interactions" && interactions.length > 0 && (
                     <div className="space-y-6">
                       {interactions.map((interaction, index) => (
                         <GlassCard key={index} className="p-6 hover:shadow-md transition-shadow bg-blue-50/50 border border-blue-100">
                           <div className="flex items-start gap-4">
-                            <div className={`rounded-full p-2 ${
-                              interaction.severity === "Severe" 
-                                ? "bg-red-50 text-red-600" 
-                                : interaction.severity === "Moderate" 
-                                  ? "bg-yellow-50 text-yellow-600" 
+                            <div className={`rounded-full p-2 ${interaction.severity === "Severe"
+                                ? "bg-red-50 text-red-600"
+                                : interaction.severity === "Moderate"
+                                  ? "bg-yellow-50 text-yellow-600"
                                   : "bg-green-50 text-green-600"
-                            }`}>
+                              }`}>
                               <ArrowRightLeft className="h-5 w-5" />
                             </div>
                             <div className="flex-1">
@@ -723,24 +720,23 @@ const SideEffects = () => {
                                 <h3 className="font-semibold text-lg">
                                   {interaction.drug1} + {interaction.drug2}
                                 </h3>
-                                <span className={`text-sm font-medium px-2 py-1 rounded-full ${
-                                  interaction.severity === "Severe" 
-                                    ? "bg-red-50 text-red-600" 
-                                    : interaction.severity === "Moderate" 
-                                      ? "bg-yellow-50 text-yellow-600" 
+                                <span className={`text-sm font-medium px-2 py-1 rounded-full ${interaction.severity === "Severe"
+                                    ? "bg-red-50 text-red-600"
+                                    : interaction.severity === "Moderate"
+                                      ? "bg-yellow-50 text-yellow-600"
                                       : "bg-green-50 text-green-600"
-                                }`}>
+                                  }`}>
                                   {interaction.severity}
                                 </span>
                               </div>
-                              
+
                               <div className="space-y-4">
                                 <div>
                                   <p className="text-sm text-muted-foreground">
                                     <span className="font-medium">Effect:</span> {interaction.effect}
                                   </p>
                                 </div>
-                                
+
                                 {interaction.mechanism && (
                                   <div className="bg-blue-50/50 p-3 rounded-lg">
                                     <p className="text-sm text-blue-800">
@@ -748,7 +744,7 @@ const SideEffects = () => {
                                     </p>
                                   </div>
                                 )}
-                                
+
                                 {interaction.evidence && (
                                   <div className="bg-purple-50/50 p-3 rounded-lg">
                                     <p className="text-sm text-purple-800">
@@ -756,7 +752,7 @@ const SideEffects = () => {
                                     </p>
                                   </div>
                                 )}
-                                
+
                                 <div className="bg-blue-50 p-3 rounded-lg flex gap-3">
                                   <CheckCircle className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
                                   <p className="text-sm text-blue-800">
@@ -775,7 +771,7 @@ const SideEffects = () => {
             )}
           </div>
         </div>
-        
+
         <Disclaimer className="mt-16" />
       </div>
     </PageContainer>

@@ -10,12 +10,12 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
-import { 
-  User, 
-  LogOut, 
-  Menu, 
-  LayoutDashboard, 
-  Settings, 
+import {
+  User,
+  LogOut,
+  Menu,
+  LayoutDashboard,
+  Settings,
   Microscope,
   Stethoscope,
   Users,
@@ -31,7 +31,7 @@ export const Navbar = () => {
   const navigate = useNavigate();
 
   // Don't show navbar on login page
-  if (location.pathname === '/' || location.pathname === '/login') {
+  if (location.pathname === '/login') {
     return null;
   }
 
@@ -49,35 +49,23 @@ export const Navbar = () => {
     switch (user.role) {
       case 'lab_admin':
         return [
-          { name: 'Lab Dashboard', path: '/lab-dashboard', icon: Microscope, badge: 'AI Hub' },
-          { name: 'Reports', path: '/patient-analysis', icon: FileText },
-          { name: 'AI Agents', path: '/drug-discovery', icon: Brain },
-          { name: 'Quality Control', path: '/side-effects', icon: Shield }
+          { name: 'Lab Dashboard', path: '/lab-dashboard', icon: Microscope, badge: 'Admin' }
         ];
-      
       case 'doctor':
         return [
-          { name: 'Doctor Dashboard', path: '/doctor-dashboard', icon: Stethoscope, badge: 'AI Enhanced' },
-          { name: 'Patients', path: '/patient-analysis', icon: Users },
-          { name: 'Lab Reports', path: '/drug-recommendation', icon: FileText },
-          { name: 'AI Insights', path: '/drug-discovery', icon: Brain }
+          { name: 'Doctor Portal', path: '/doctor-dashboard', icon: Stethoscope, badge: 'Clinical' }
         ];
-      
       case 'patient':
         return [
-          { name: 'Patient Portal', path: '/patient-portal', icon: User, badge: 'My Health' },
-          { name: 'My Reports', path: '/patient-analysis', icon: FileText },
-          { name: 'Health Trends', path: '/drug-recommendation', icon: Activity },
-          { name: 'Medications', path: '/side-effects', icon: Shield }
+          { name: 'My Health Portal', path: '/patient-portal', icon: User, badge: 'Personal' }
         ];
-      
+      case 'researcher': // Assuming this role exists or might exist
+        return [
+          { name: 'Drug Discovery', path: '/drug-discovery', icon: Brain, badge: 'R&D' }
+        ];
       default:
         return [
-          { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-          { name: 'Patient Analysis', path: '/patient-analysis', icon: FileText },
-          { name: 'Drug Recommendation', path: '/drug-recommendation', icon: Shield },
-          { name: 'Drug Discovery', path: '/drug-discovery', icon: Brain },
-          { name: 'Side Effects', path: '/side-effects', icon: Activity }
+          { name: 'Home', path: '/home', icon: LayoutDashboard, badge: '' }
         ];
     }
   };
@@ -113,8 +101,8 @@ export const Navbar = () => {
               </div>
               <div>
                 <h1 className="text-xl font-bold tracking-tight">
-                  <span className="text-gray-900">PathologyAI</span>
-                  <span className="text-blue-600"> Hub</span>
+                  <span className="text-gray-900">MedGenius</span>
+                  <span className="text-blue-600"> AI</span>
                 </h1>
                 <div className="text-xs text-gray-500">AI Operating System for Labs</div>
               </div>
@@ -124,25 +112,23 @@ export const Navbar = () => {
               <div className="hidden lg:flex lg:ml-8 lg:space-x-2">
                 <Link
                   to="/home"
-                  className={`text-gray-600 hover:text-blue-600 hover:bg-blue-50 inline-flex items-center px-3 py-2 text-sm font-medium transition-colors rounded-lg ${
-                    location.pathname === '/home' ? 'text-blue-600 bg-blue-50' : ''
-                  }`}
+                  className={`text-gray-600 hover:text-blue-600 hover:bg-blue-50 inline-flex items-center px-3 py-2 text-sm font-medium transition-colors rounded-lg ${location.pathname === '/home' ? 'text-blue-600 bg-blue-50' : ''
+                    }`}
                 >
                   Home
                 </Link>
                 {navigationItems.map((item) => {
                   const Icon = item.icon;
                   const isActive = location.pathname === item.path;
-                  
+
                   return (
                     <Link
                       key={item.path}
                       to={item.path}
-                      className={`inline-flex items-center space-x-2 px-3 py-2 text-sm font-medium transition-colors rounded-lg ${
-                        isActive
-                          ? 'text-blue-600 bg-blue-50'
-                          : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'
-                      }`}
+                      className={`inline-flex items-center space-x-2 px-3 py-2 text-sm font-medium transition-colors rounded-lg ${isActive
+                        ? 'text-blue-600 bg-blue-50'
+                        : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'
+                        }`}
                     >
                       <Icon className="h-4 w-4" />
                       <span>{item.name}</span>
@@ -159,7 +145,7 @@ export const Navbar = () => {
           </div>
 
           <div className="flex items-center space-x-3">
-            {user && (
+            {user ? (
               <>
                 {/* Role Badge */}
                 <Badge className={getRoleBadgeColor(user.role)}>
@@ -199,6 +185,10 @@ export const Navbar = () => {
                   </DropdownMenuContent>
                 </DropdownMenu>
               </>
+            ) : (
+              <Button onClick={() => navigate('/login')} className="bg-blue-600 hover:bg-blue-700 text-white">
+                Login
+              </Button>
             )}
           </div>
 
@@ -217,27 +207,25 @@ export const Navbar = () => {
           <div className="px-2 pt-2 pb-3 space-y-1">
             <Link
               to="/home"
-              className={`block px-3 py-2 rounded-md text-base font-medium ${
-                location.pathname === '/home'
-                  ? 'text-blue-600 bg-blue-50'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-              }`}
+              className={`block px-3 py-2 rounded-md text-base font-medium ${location.pathname === '/home'
+                ? 'text-blue-600 bg-blue-50'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                }`}
             >
               Home
             </Link>
             {navigationItems.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path;
-              
+
               return (
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`flex items-center space-x-3 px-3 py-2 rounded-md text-base font-medium ${
-                    isActive
-                      ? 'text-blue-600 bg-blue-50'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                  }`}
+                  className={`flex items-center space-x-3 px-3 py-2 rounded-md text-base font-medium ${isActive
+                    ? 'text-blue-600 bg-blue-50'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                    }`}
                 >
                   <Icon className="h-5 w-5" />
                   <span>{item.name}</span>

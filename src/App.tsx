@@ -4,6 +4,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import PrivateRoute from '@/components/PrivateRoute';
 import { AdminRoute } from '@/components/AdminRoute';
+import RoleBasedRoute from '@/components/RoleBasedRoute';
 import { DidYouKnow } from '@/components/ui/DidYouKnow';
 import Layout from '@/components/layout/Layout';
 import ScrollToTop from '@/components/ScrollToTop';
@@ -14,32 +15,32 @@ import PatientAnalysis from '@/pages/PatientAnalysis';
 import DrugDiscovery from '@/pages/DrugDiscovery';
 import SideEffects from '@/pages/SideEffects';
 import AdminDashboard from '@/pages/AdminDashboard';
-import UserManagement from '@/pages/UserManagement';
-import Settings from '@/pages/Settings';
-import NotFound from '@/pages/NotFound';
-import PatientDashboard from '@/pages/PatientDashboard';
+import PatientPortal from './pages/PatientPortal';
 import AnalysisResults from '@/pages/AnalysisResults';
 import DrugRecommendation from './pages/DrugRecommendation';
-import LabDashboard from './pages/LabDashboard';
-import PatientPortal from './pages/PatientPortal';
-import DoctorDashboard from './pages/DoctorDashboard';
 import Documentation from './pages/Documentation';
 import ApiReference from './pages/ApiReference';
 import Profile from './pages/Profile';
 import AboutUs from './pages/AboutUs';
 import ContactUs from './pages/ContactUs';
+import Settings from '@/pages/Settings';
+import UserManagement from '@/pages/UserManagement';
+import NotFound from '@/pages/NotFound';
 import { useSessionTimeout } from '@/hooks/useSessionTimeout';
+import LabDashboard from './pages/LabDashboard';
+import DoctorDashboard from './pages/DoctorDashboard';
+import PatientDashboard from './pages/PatientDashboard';
 
 // Wrapper component to conditionally render DidYouKnow
 const DidYouKnowWrapper = () => {
   const { user } = useAuth();
   const location = useLocation();
-  
+
   // Only show on home page when logged in
   if (!user || location.pathname !== '/home') {
     return null;
   }
-  
+
   return <DidYouKnow />;
 };
 
@@ -54,7 +55,11 @@ const AppContent = () => {
       <DidYouKnowWrapper />
       <Routes>
         {/* Public Routes - Accessible to everyone */}
-        <Route path="/" element={<Login />} />
+        <Route path="/" element={
+          <Layout>
+            <Home />
+          </Layout>
+        } />
         <Route path="/login" element={<Login />} />
 
         {/* Protected Routes - Require authentication and use Layout */}
@@ -62,20 +67,28 @@ const AppContent = () => {
           <Route element={<Layout />}> {/* Layout wraps these routes */}
             <Route path="/home" element={<Home />} />
             <Route path="/dashboard" element={<Dashboard />} />
-            
-            {/* PathologyAI Hub Role-based Dashboards */}
-            <Route path="/lab-dashboard" element={<LabDashboard />} />
-            <Route path="/patient-portal" element={<PatientPortal />} />
-            
-            <Route path="/patient" element={<PatientDashboard />} />
-            <Route path="/patient-analysis" element={<PatientAnalysis />} />
-            <Route path="/patient/analysis" element={<PatientAnalysis />} />
-            <Route path="/patient/analysis/:id" element={<AnalysisResults />} />
+
+            {/* PathologyAI Hub Strict Role-Based Dashboards */}
+            <Route element={<RoleBasedRoute allowedRoles={['lab_admin']} />}>
+              <Route path="/lab-dashboard" element={<LabDashboard />} />
+            </Route>
+
+            <Route element={<RoleBasedRoute allowedRoles={['doctor']} />}>
+              <Route path="/doctor-dashboard" element={<DoctorDashboard />} />
+            </Route>
+
+            <Route element={<RoleBasedRoute allowedRoles={['patient']} />}>
+              <Route path="/patient-dashboard" element={<PatientDashboard />} />
+              <Route path="/patient-portal" element={<PatientPortal />} />
+              <Route path="/patient" element={<PatientDashboard />} />
+              <Route path="/patient-analysis" element={<PatientAnalysis />} />
+              <Route path="/patient/analysis" element={<PatientAnalysis />} />
+              <Route path="/patient/analysis/:id" element={<AnalysisResults />} />
+            </Route>
             <Route path="/drug-discovery" element={<DrugDiscovery />} />
             <Route path="/side-effects" element={<SideEffects />} />
             <Route path="/drug-recommendation" element={<DrugRecommendation />} />
             <Route path="/settings" element={<Settings />} />
-            <Route path="/patient-dashboard" element={<PatientDashboard />} />
             <Route path="/analysis-results" element={<AnalysisResults />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/about" element={<AboutUs />} />
@@ -92,7 +105,7 @@ const AppContent = () => {
             {/* Fallback for not found pages inside Layout */}
             <Route path="*" element={<NotFound />} />
           </Route>
-          
+
           {/* Doctor Dashboard outside Layout for testing */}
           <Route path="/doctor-dashboard" element={<DoctorDashboard />} />
         </Route>

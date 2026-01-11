@@ -12,4 +12,7 @@ router.post('/login', authController.login);
 // Get current user
 router.get('/me', auth, authController.getCurrentUser);
 
+// Get users by role
+router.get('/users/:role', authController.getUsersByRole);
+
 module.exports = router; 

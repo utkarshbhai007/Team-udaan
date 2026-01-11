@@ -11,24 +11,26 @@ const generateToken = (userId) => {
 // Register new user
 exports.register = async (req, res) => {
   try {
-    const { email, password, name, role } = req.body;
+    const { name, email, password, role, profile, labDetails } = req.body;
 
-    // Check if user already exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ message: 'Email already registered' });
+    // Check if user exists
+    let user = await User.findOne({ email });
+    if (user) {
+      return res.status(400).json({ message: 'User already exists' });
     }
 
-    // Create new user
-    const user = new User({
+    // Create user
+    user = new User({
+      name,
       email,
       password,
-      name,
-      role: role || 'patient'
+      role: role || 'patient',
+      profile,
+      labDetails
     });
 
     await user.save();
-    
+
     // Generate token
     const token = generateToken(user._id);
 
@@ -39,7 +41,19 @@ exports.register = async (req, res) => {
     });
   } catch (error) {
     console.error('Registration error:', error);
-    res.status(500).json({ message: 'Error during registration' });
+
+    // Handle Mongoose validation errors
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(val => val.message);
+      return res.status(400).json({ message: messages.join(', ') });
+    }
+
+    // Handle duplicate key error (e.g., email already exists)
+    if (error.code === 11000) {
+      return res.status(400).json({ message: 'Email already exists' });
+    }
+
+    res.status(500).json({ message: 'Error during registration: ' + error.message });
   }
 };
 
@@ -85,5 +99,17 @@ exports.getCurrentUser = async (req, res) => {
   } catch (error) {
     console.error('Get current user error:', error);
     res.status(500).json({ message: 'Error fetching user data' });
+  }
+};
+
+// Get users by role
+exports.getUsersByRole = async (req, res) => {
+  try {
+    const { role } = req.params;
+    const users = await User.find({ role }).select('-password'); // Exclude password
+    res.json(users);
+  } catch (error) {
+    console.error('Get users by role error:', error);
+    res.status(500).json({ message: 'Error fetching users' });
   }
 }; 

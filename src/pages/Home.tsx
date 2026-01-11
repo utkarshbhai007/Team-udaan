@@ -3,14 +3,14 @@ import { motion } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Microscope, 
-  Shield, 
-  Brain, 
-  Pill, 
-  Users, 
-  Clock, 
-  TrendingUp, 
+import {
+  Microscope,
+  Shield,
+  Brain,
+  Pill,
+  Users,
+  Clock,
+  TrendingUp,
   AlertTriangle,
   CheckCircle,
   BarChart3,
@@ -126,23 +126,23 @@ const Home = () => {
               AI Operating System for Pathology Labs
             </Badge>
             <h1 className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-6">
-              PathologyAI Hub
+              MedGenius AI
             </h1>
             <p className="text-xl md:text-2xl text-gray-600 mb-8 max-w-4xl mx-auto">
-              5 AI Agents Working 24/7 to Transform Pathology Labs with 3x Faster Reports, 
+              5 AI Agents Working 24/7 to Transform Pathology Labs with 3x Faster Reports,
               Early Disease Detection, and Medication Safety
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button 
-                size="lg" 
+              <Button
+                size="lg"
                 className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3"
                 onClick={() => navigate('/dashboard')}
               >
                 Start Free Trial
               </Button>
-              <Button 
-                size="lg" 
-                variant="outline" 
+              <Button
+                size="lg"
+                variant="outline"
                 className="border-blue-600 text-blue-600 hover:bg-blue-50 px-8 py-3"
                 onClick={() => navigate('/documentation')}
               >
@@ -181,7 +181,7 @@ const Home = () => {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Meet Your AI Agent Team
+              Meet Your MedGenius AI Team
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
               5 specialized AI agents working together to revolutionize pathology operations
@@ -198,9 +198,8 @@ const Home = () => {
                 onHoverStart={() => setActiveAgent(agent.id)}
                 onHoverEnd={() => setActiveAgent(null)}
               >
-                <Card className={`h-full cursor-pointer transition-all duration-300 ${
-                  activeAgent === agent.id ? 'shadow-xl scale-105' : 'shadow-lg hover:shadow-xl'
-                }`}>
+                <Card className={`h-full cursor-pointer transition-all duration-300 ${activeAgent === agent.id ? 'shadow-xl scale-105' : 'shadow-lg hover:shadow-xl'
+                  }`}>
                   <CardHeader>
                     <div className={`w-12 h-12 rounded-lg ${agent.color} flex items-center justify-center mb-4`}>
                       <agent.icon className="h-6 w-6 text-white" />
@@ -233,10 +232,10 @@ const Home = () => {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Why PathologyAI Hub Wins
+              Why MedGenius AI Wins
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Our unfair advantages that make us the #1 choice for pathology labs
+              Our unfair advantages that make us the #1 choice for labs
             </p>
           </div>
 
@@ -313,7 +312,7 @@ const Home = () => {
               </h3>
               <div className="space-y-6">
                 <div className="border-l-4 border-green-500 pl-6">
-                  <h4 className="font-semibold text-lg mb-2">PathologyAI Hub:</h4>
+                  <h4 className="font-semibold text-lg mb-2">MedGenius AI:</h4>
                   <ul className="space-y-2 text-gray-600">
                     <li>🔬 Auto-generated reports in 4 hours (vs 24 hours)</li>
                     <li>🚨 30% reduction in errors with AI quality control</li>
@@ -356,16 +355,16 @@ const Home = () => {
               Join the AI revolution in pathology. Start your free trial today and see 3x faster reports in 30 days.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button 
-                size="lg" 
+              <Button
+                size="lg"
                 className="bg-white text-blue-600 hover:bg-gray-100 px-8 py-3"
                 onClick={() => navigate('/dashboard')}
               >
                 Start Free Trial
               </Button>
-              <Button 
-                size="lg" 
-                variant="outline" 
+              <Button
+                size="lg"
+                variant="outline"
                 className="border-white text-white hover:bg-white/10 px-8 py-3"
                 onClick={() => navigate('/contact')}
               >

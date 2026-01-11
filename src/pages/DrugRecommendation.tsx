@@ -15,6 +15,27 @@ import jsPDF from 'jspdf';
 import { Disclaimer } from "@/components/ui/Disclaimer";
 import { useAuth } from "@/contexts/AuthContext";
 
+const deepParseJsonStrings = (obj: any): any => {
+  if (typeof obj === 'string') {
+    try {
+      return deepParseJsonStrings(JSON.parse(obj));
+    } catch {
+      return obj;
+    }
+  }
+  if (typeof obj === 'object' && obj !== null) {
+    if (Array.isArray(obj)) {
+      return obj.map(deepParseJsonStrings);
+    }
+    const result: any = {};
+    for (const key in obj) {
+      result[key] = deepParseJsonStrings(obj[key]);
+    }
+    return result;
+  }
+  return obj;
+};
+
 const DrugRecommendation = () => {
   const [patientInfo, setPatientInfo] = useState("");
   const [disease, setDisease] = useState("");
@@ -39,10 +60,10 @@ const DrugRecommendation = () => {
             storedPatientInfo.gender ? `Gender: ${storedPatientInfo.gender}` : '',
             storedPatientInfo.patientData ? `\nPatient Data:\n${storedPatientInfo.patientData}` : ''
           ].filter(Boolean).join('\n');
-          
+
           setPatientInfo(formattedInfo);
           setActiveTab("patient");
-          
+
           toast({
             title: "Patient Data Loaded",
             description: "Patient information has been loaded from your previous analysis.",
@@ -118,7 +139,7 @@ const DrugRecommendation = () => {
     }, 300);
 
     try {
-      const prompt = activeTab === "patient" 
+      const prompt = activeTab === "patient"
         ? `Based on the following patient information, provide drug recommendations in JSON format:
         Patient Information: ${patientInfo}
         
@@ -154,49 +175,22 @@ const DrugRecommendation = () => {
         
         Ensure the response is valid JSON and contains at least 3 drug recommendations.`;
 
-      const response = await pathologyAI.checkMedicationSafety([], { symptoms: analysisData.analysis });
-      
+      // Use real Drug Recommendation Request
+      const requestData = activeTab === "patient"
+        ? { patientInfo }
+        : { disease };
+
+      const response = await pathologyAI.getDrugRecommendations(requestData);
+
       let result;
-      if (response && response.aiAnalysis) {
-        // Convert PathologyAI response to expected format
-        result = {
-          recommendations: [
-            {
-              drugName: "Medication Recommendation 1",
-              dosage: "As prescribed",
-              frequency: "As directed",
-              duration: "As needed",
-              reason: "Based on AI analysis",
-              sideEffects: response.aiAnalysis.alerts || [],
-              contraindications: response.aiAnalysis.contraindications || [],
-              interactions: response.aiAnalysis.interactions || []
-            }
-          ]
-        };
+      if (response && response.recommendations) {
+        result = response;
       } else {
-        // Fallback response
-        result = {
-          recommendations: [
-            {
-              drugName: "Consult Healthcare Provider",
-              dosage: "N/A",
-              frequency: "N/A", 
-              duration: "N/A",
-              reason: "Professional medical consultation recommended",
-              sideEffects: [],
-              contraindications: [],
-              interactions: []
-            }
-          ]
-        };
-      }
-      
-      if (!result || typeof result !== 'object' || !result.recommendations) {
         throw new Error("Invalid recommendations response format");
       }
 
       const processedResult = deepParseJsonStrings(result);
-      
+
       // Ensure recommendations is an array
       if (!Array.isArray(processedResult.recommendations)) {
         processedResult.recommendations = [processedResult.recommendations];
@@ -231,27 +225,27 @@ const DrugRecommendation = () => {
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
-      
+
       // Add header with border bottom
       pdf.setFontSize(24);
       pdf.setTextColor(44, 62, 80);
       pdf.text('Drug Recommendation Report', pdfWidth / 2, 20, { align: 'center' });
       pdf.setDrawColor(200, 200, 200);
       pdf.line(20, 25, pdfWidth - 20, 25);
-      
+
       // Add timestamp
       pdf.setFontSize(10);
       pdf.setTextColor(128, 128, 128);
       pdf.text(`Generated on: ${new Date().toLocaleString()}`, pdfWidth / 2, 35, { align: 'center' });
-      
+
       let yPos = 50;
-      
+
       // Add search criteria section with border
       pdf.setFontSize(14);
       pdf.setFont(undefined, 'bold');
       pdf.text('Search Criteria', 20, yPos);
       yPos += 10;
-      
+
       pdf.setFontSize(12);
       pdf.setFont(undefined, 'normal');
       if (activeTab === 'patient') {
@@ -271,10 +265,10 @@ const DrugRecommendation = () => {
       pdf.setFont(undefined, 'bold');
       pdf.text('Drug Recommendations', 20, yPos);
       yPos += 10;
-      
+
       pdf.setFontSize(12);
       pdf.setFont(undefined, 'normal');
-      
+
       recommendations.forEach((rec: any, index: number) => {
         // Check if we need a new page
         if (yPos > pdfHeight - 60) {
@@ -331,20 +325,20 @@ const DrugRecommendation = () => {
         pdf.line(20, yPos - 5, pdfWidth - 20, yPos - 5);
         yPos += 10;
       });
-      
+
       // Add border around the entire content
       pdf.setDrawColor(180, 180, 180);
       pdf.rect(15, 15, pdfWidth - 30, pdfHeight - 25);
-      
+
       // Add footer with border top
       pdf.setFontSize(10);
       pdf.setTextColor(128, 128, 128);
       pdf.line(20, pdfHeight - 15, pdfWidth - 20, pdfHeight - 15);
       pdf.text('Generated by PathologyAI Hub', pdfWidth / 2, pdfHeight - 10, { align: 'center' });
-      
+
       // Save the PDF
       pdf.save('drug-recommendations-report.pdf');
-      
+
       toast({
         title: "Report Generated",
         description: "Your drug recommendations report has been downloaded successfully.",
@@ -375,13 +369,13 @@ const DrugRecommendation = () => {
           <div className="animate-slide-up">
             <GlassCard className="h-full">
               <h2 className="text-xl font-semibold mb-6">Enter Information</h2>
-              
+
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="patient">Patient Information</TabsTrigger>
                   <TabsTrigger value="disease">Disease Name</TabsTrigger>
                 </TabsList>
-                
+
                 <TabsContent value="patient" className="space-y-6">
                   <div className="flex items-center justify-between">
                     <h2 className="text-lg font-medium">Enter Patient Information</h2>
@@ -402,7 +396,7 @@ const DrugRecommendation = () => {
                     onChange={e => setPatientInfo(e.target.value)}
                   />
                 </TabsContent>
-                
+
                 <TabsContent value="disease" className="space-y-6">
                   <div>
                     <label className="block text-sm font-medium mb-2">
@@ -417,8 +411,8 @@ const DrugRecommendation = () => {
                 </TabsContent>
               </Tabs>
 
-              <Button 
-                className="w-full mt-6" 
+              <Button
+                className="w-full mt-6"
                 onClick={handleGenerateRecommendations}
                 disabled={isGenerating}
               >
@@ -463,7 +457,7 @@ const DrugRecommendation = () => {
                   </Button>
                 )}
               </div>
-              
+
               {!recommendations ? (
                 <div className="text-center py-20 text-muted-foreground">
                   {isGenerating ? (
@@ -511,7 +505,7 @@ const DrugRecommendation = () => {
                           <p className="text-sm text-muted-foreground">
                             The following potential interactions have been identified between the recommended medications:
                           </p>
-                          
+
                           <div className="space-y-3">
                             {recommendations.length > 1 && (
                               <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-100">
@@ -519,19 +513,19 @@ const DrugRecommendation = () => {
                                   {recommendations[0].drugName} + {recommendations[1].drugName}
                                 </h4>
                                 <p className="text-sm text-yellow-700">
-                                  These medications may interact and cause increased side effects. 
+                                  These medications may interact and cause increased side effects.
                                   Please consult your healthcare provider before taking them together.
                                 </p>
                               </div>
                             )}
-                            
+
                             {recommendations.length > 2 && (
                               <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-100">
                                 <h4 className="font-medium text-yellow-800 mb-2">
                                   {recommendations[1].drugName} + {recommendations[2].drugName}
                                 </h4>
                                 <p className="text-sm text-yellow-700">
-                                  These medications may affect each other's effectiveness. 
+                                  These medications may affect each other's effectiveness.
                                   Your doctor may need to adjust the dosages.
                                 </p>
                               </div>

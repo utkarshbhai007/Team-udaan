@@ -21,8 +21,22 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['patient', 'doctor', 'researcher'],
+    enum: ['patient', 'doctor', 'lab_admin', 'researcher'],
     default: 'patient'
+  },
+  // Patient Specific
+  profile: {
+    age: Number,
+    gender: { type: String, enum: ['M', 'F', 'Other'] },
+    bloodType: String,
+    medicalHistory: [String],
+    medications: [String]
+  },
+  // Lab Specific
+  labDetails: {
+    name: String,
+    licenseNumber: String,
+    address: String
   },
   createdAt: {
     type: Date,
@@ -31,7 +45,7 @@ const userSchema = new mongoose.Schema({
 });
 
 // Hash password before saving
-userSchema.pre('save', async function(next) {
+userSchema.pre('save', async function (next) {
   const user = this;
   if (user.isModified('password')) {
     user.password = await bcrypt.hash(user.password, 8);
@@ -40,12 +54,12 @@ userSchema.pre('save', async function(next) {
 });
 
 // Method to compare password for login
-userSchema.methods.comparePassword = async function(password) {
+userSchema.methods.comparePassword = async function (password) {
   return bcrypt.compare(password, this.password);
 };
 
 // Remove password when converting to JSON
-userSchema.methods.toJSON = function() {
+userSchema.methods.toJSON = function () {
   const user = this.toObject();
   delete user.password;
   return user;

@@ -4,43 +4,38 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from '@/hooks/use-toast';
-import { 
-  Microscope, 
-  Stethoscope, 
-  User, 
-  Shield, 
-  Brain, 
+import {
+  Microscope,
+  Stethoscope,
+  User,
+  Shield,
+  Brain,
   Activity,
   AlertCircle,
   CheckCircle,
   Eye,
-  EyeOff
+  EyeOff,
+  ArrowRight
 } from 'lucide-react';
 
 export default function Login() {
   const navigate = useNavigate();
-  const { register, signInWithGoogle } = useAuth();
+  const { login, register } = useAuth();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [isLogin, setIsLogin] = useState(true);
 
-  const [loginData, setLoginData] = useState({
+  const [formData, setFormData] = useState({
     email: '',
     password: '',
-    role: ''
-  });
-
-  const [registerData] = useState({
-    email: '',
-    password: '',
-    confirmPassword: '',
     name: '',
-    role: 'patient' as 'patient' | 'doctor' | 'lab_admin'
+    role: 'patient' as 'patient' | 'doctor' | 'lab_admin' | 'researcher'
   });
 
   const roles = [
@@ -94,83 +89,60 @@ export default function Login() {
     }
   ];
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
     try {
-      if (!loginData.email || !loginData.password || !loginData.role) {
-        throw new Error('Please fill in all fields');
-      }
-
-      // Demo authentication
-      const demoUser = demoCredentials.find(
-        cred => cred.email === loginData.email && cred.password === loginData.password && cred.role === loginData.role
-      );
-
-      if (demoUser) {
-        // Create mock user for auth context
-        const mockUser = {
-          uid: `${demoUser.role}-001`,
-          email: demoUser.email,
-          displayName: demoUser.name,
-          role: demoUser.role
-        };
-        
-        // Store in localStorage
-        localStorage.setItem('user', JSON.stringify(mockUser));
-        
-        // Trigger storage event for auth context
-        window.dispatchEvent(new StorageEvent('storage', {
-          key: 'user',
-          newValue: JSON.stringify(mockUser)
-        }));
-
-        toast({
-          title: "Success",
-          description: `Logged in as ${demoUser.name}`,
-        });
-
-        // Navigate based on role
-        setTimeout(() => {
-          switch (loginData.role) {
-            case 'lab_admin':
-              navigate('/lab-dashboard');
-              break;
-            case 'doctor':
-              navigate('/doctor-dashboard');
-              break;
-            case 'patient':
-              navigate('/patient-portal');
-              break;
-            default:
-              navigate('/home');
-          }
-        }, 100);
+      if (isLogin) {
+        // Login Logic
+        await login(formData.email, formData.password);
       } else {
-        throw new Error('Invalid credentials. Please use demo credentials.');
+        // Register Logic
+        if (!formData.name) throw new Error('Name is required for registration');
+        await register(formData.email, formData.password, formData.name, formData.role);
       }
+
+      // Determine where to redirect based on role
+      // Note: In real app, we might check the user object returned from login/register
+      // But here we can use the local selected role for immediate redirect prediction
+      const targetRole = isLogin ? formData.role || 'patient' : formData.role;
+
+      setTimeout(() => {
+        switch (targetRole) {
+          case 'lab_admin':
+            navigate('/lab-dashboard');
+            break;
+          case 'doctor':
+            navigate('/doctor-dashboard');
+            break;
+          case 'patient':
+            navigate('/patient-portal');
+            break;
+          default:
+            navigate('/home');
+        }
+      }, 100);
+
     } catch (error: any) {
-      setError(error.message);
-      toast({
-        variant: "destructive",
-        title: "Login failed",
-        description: error.message,
-      });
+      setError(error.message || (isLogin ? 'Login failed' : 'Registration failed'));
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDemoLogin = (demoRole: string) => {
+  const handleDemoLogin = async (demoRole: string) => {
     const demo = demoCredentials.find(cred => cred.role === demoRole);
     if (demo) {
-      setLoginData({
+      setFormData({
+        ...formData,
         email: demo.email,
         password: demo.password,
-        role: demo.role
+        role: demo.role as any
       });
+      // Optionally auto-submit
+      // handleSubmit(new Event('submit') as any); 
     }
   };
 
@@ -195,7 +167,7 @@ export default function Login() {
                 Transform Pathology with AI
               </h2>
               <p className="text-lg text-gray-600">
-                5 AI agents working 24/7 to deliver 3x faster reports, early disease detection, 
+                5 AI agents working 24/7 to deliver 3x faster reports, early disease detection,
                 and medication safety for labs, doctors, and patients.
               </p>
             </div>
@@ -210,7 +182,7 @@ export default function Login() {
                   <p className="text-sm text-gray-600">Report Processing</p>
                 </div>
               </div>
-              
+
               <div className="flex items-center space-x-3 p-4 bg-white rounded-lg shadow-sm">
                 <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
                   <Shield className="h-5 w-5 text-green-600" />
@@ -220,7 +192,7 @@ export default function Login() {
                   <p className="text-sm text-gray-600">Errors</p>
                 </div>
               </div>
-              
+
               <div className="flex items-center space-x-3 p-4 bg-white rounded-lg shadow-sm">
                 <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
                   <Activity className="h-5 w-5 text-purple-600" />
@@ -230,7 +202,7 @@ export default function Login() {
                   <p className="text-sm text-gray-600">Early Detection</p>
                 </div>
               </div>
-              
+
               <div className="flex items-center space-x-3 p-4 bg-white rounded-lg shadow-sm">
                 <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
                   <CheckCircle className="h-5 w-5 text-orange-600" />
@@ -244,17 +216,21 @@ export default function Login() {
           </div>
         </div>
 
-        {/* Right Side - Login Form */}
+        {/* Right Side - Login/Register Form */}
         <div className="flex flex-col justify-center">
-          <Card className="w-full max-w-md mx-auto shadow-xl">
-            <CardHeader className="text-center">
-              <CardTitle className="text-2xl">Welcome to PathologyAI Hub</CardTitle>
+          <Card className="w-full max-w-md mx-auto shadow-xl border-t-4 border-t-blue-600">
+            <CardHeader className="text-center pb-2">
+              <CardTitle className="text-2xl">
+                {isLogin ? 'Welcome Back' : 'Create Account'}
+              </CardTitle>
               <CardDescription>
-                Sign in to access your AI-powered dashboard
+                {isLogin
+                  ? 'Sign in to access your dashboard'
+                  : 'Join thousands of healthcare professionals using AI'}
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleLogin} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-4">
                 {error && (
                   <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
@@ -262,11 +238,16 @@ export default function Login() {
                   </Alert>
                 )}
 
+                {/* Role Selection is useful for both, but critical for Register. 
+                    For Login, we might optionalize it if we auto-detect, but keeping it simple for now. */}
                 <div className="space-y-2">
-                  <Label htmlFor="role">Select Your Role</Label>
-                  <Select value={loginData.role} onValueChange={(value) => setLoginData({...loginData, role: value})}>
+                  <Label htmlFor="role">I am a...</Label>
+                  <Select
+                    value={formData.role}
+                    onValueChange={(value: any) => setFormData({ ...formData, role: value })}
+                  >
                     <SelectTrigger>
-                      <SelectValue placeholder="Choose your role" />
+                      <SelectValue placeholder="Select Role" />
                     </SelectTrigger>
                     <SelectContent>
                       {roles.map((roleOption) => {
@@ -284,14 +265,28 @@ export default function Login() {
                   </Select>
                 </div>
 
+                {!isLogin && (
+                  <div className="space-y-2 animate-in fade-in slide-in-from-top-4 duration-300">
+                    <Label htmlFor="name">Full Name</Label>
+                    <Input
+                      id="name"
+                      type="text"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      placeholder="Dr. John Doe"
+                      required={!isLogin}
+                    />
+                  </div>
+                )}
+
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
                   <Input
                     id="email"
                     type="email"
-                    value={loginData.email}
-                    onChange={(e) => setLoginData({...loginData, email: e.target.value})}
-                    placeholder="Enter your email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    placeholder="name@example.com"
                     required
                   />
                 </div>
@@ -302,9 +297,9 @@ export default function Login() {
                     <Input
                       id="password"
                       type={showPassword ? "text" : "password"}
-                      value={loginData.password}
-                      onChange={(e) => setLoginData({...loginData, password: e.target.value})}
-                      placeholder="Enter your password"
+                      value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      placeholder="••••••••"
                       required
                     />
                     <button
@@ -317,74 +312,98 @@ export default function Login() {
                   </div>
                 </div>
 
-                <Button 
-                  type="submit" 
-                  className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                <Button
+                  type="submit"
+                  className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 h-11 text-base shadow-md transition-all hover:scale-[1.01]"
                   disabled={loading}
                 >
-                  {loading ? 'Signing in...' : 'Sign In'}
+                  {loading ? (
+                    <div className="flex items-center gap-2">
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                      {isLogin ? 'Signing in...' : 'Creating Account...'}
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center gap-2">
+                      {isLogin ? 'Sign In' : 'Create Account'}
+                      <ArrowRight className="h-4 w-4" />
+                    </div>
+                  )}
                 </Button>
               </form>
 
-              {/* Demo Credentials */}
-              <div className="mt-6 pt-6 border-t">
-                <p className="text-sm text-gray-600 text-center mb-4">
-                  Demo Credentials (Click to auto-fill):
-                </p>
-                <div className="space-y-2">
-                  {demoCredentials.map((demo) => {
-                    const roleInfo = roles.find(r => r.value === demo.role);
-                    const Icon = roleInfo?.icon || User;
-                    
-                    return (
-                      <Button
-                        key={demo.role}
-                        variant="outline"
-                        size="sm"
-                        className="w-full justify-start"
-                        onClick={() => handleDemoLogin(demo.role)}
-                        type="button"
-                      >
-                        <Icon className={`h-4 w-4 mr-2 ${roleInfo?.color}`} />
-                        <span className="flex-1 text-left">{roleInfo?.label}</span>
-                        <Badge variant="secondary" className="text-xs">
-                          {demo.email}
-                        </Badge>
-                      </Button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Role Features */}
-              {loginData.role && (
+              {/* Demo Credentials - Login Only */}
+              {isLogin && (
                 <div className="mt-6 pt-6 border-t">
-                  {(() => {
-                    const selectedRole = roles.find(r => r.value === loginData.role);
-                    if (!selectedRole) return null;
-                    
-                    const Icon = selectedRole.icon;
-                    return (
-                      <div className={`p-4 rounded-lg ${selectedRole.bgColor}`}>
-                        <div className="flex items-center space-x-2 mb-3">
-                          <Icon className={`h-5 w-5 ${selectedRole.color}`} />
-                          <h4 className="font-semibold text-gray-900">{selectedRole.label} Features</h4>
-                        </div>
-                        <ul className="space-y-1">
-                          {selectedRole.features.map((feature, index) => (
-                            <li key={index} className="flex items-center text-sm text-gray-700">
-                              <CheckCircle className="h-3 w-3 text-green-500 mr-2" />
-                              {feature}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    );
-                  })()}
+                  <p className="text-xs text-muted-foreground text-center mb-3 uppercase tracking-wider font-medium">
+                    Or try with Demo Account
+                  </p>
+                  <div className="grid grid-cols-1 gap-2">
+                    {demoCredentials.map((demo) => {
+                      const roleInfo = roles.find(r => r.value === demo.role);
+                      const Icon = roleInfo?.icon || User;
+
+                      return (
+                        <Button
+                          key={demo.role}
+                          variant="outline"
+                          size="sm"
+                          className="w-full justify-start hover:bg-gray-50 border-gray-200"
+                          onClick={() => handleDemoLogin(demo.role)}
+                          type="button"
+                        >
+                          <Icon className={`h-4 w-4 mr-2 ${roleInfo?.color}`} />
+                          <span className="flex-1 text-left font-medium">{roleInfo?.label}</span>
+                          <Badge variant="secondary" className="text-[10px] font-normal bg-gray-100 text-gray-500">
+                            Demo
+                          </Badge>
+                        </Button>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </CardContent>
+            <CardFooter className="bg-gray-50 flex justify-center py-4 rounded-b-xl border-t">
+              <p className="text-sm text-gray-600">
+                {isLogin ? "Don't have an account? " : "Already have an account? "}
+                <button
+                  onClick={() => {
+                    setIsLogin(!isLogin);
+                    setError('');
+                  }}
+                  className="font-semibold text-blue-600 hover:text-blue-700 hover:underline transition-color"
+                >
+                  {isLogin ? "Sign Up" : "Sign In"}
+                </button>
+              </p>
+            </CardFooter>
           </Card>
+
+          {/* Feature Highlight for Selected Role */}
+          <div className={`mt-6 transition-all duration-500 ${formData.role ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+            {(() => {
+              const selectedRole = roles.find(r => r.value === formData.role);
+              if (!selectedRole) return null;
+
+              const Icon = selectedRole.icon;
+              return (
+                <div className={`p-4 rounded-xl border ${selectedRole.bgColor} border-${selectedRole.color.split('-')[1]}-100 shadow-sm max-w-md mx-auto`}>
+                  <div className="flex items-center space-x-2 mb-3">
+                    <Icon className={`h-5 w-5 ${selectedRole.color}`} />
+                    <h4 className="font-semibold text-gray-900">{selectedRole.label} Workspace</h4>
+                  </div>
+                  <ul className="space-y-1">
+                    {selectedRole.features.map((feature, index) => (
+                      <li key={index} className="flex items-center text-sm text-gray-700">
+                        <CheckCircle className={`h-3 w-3 mr-2 ${selectedRole.color}`} />
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })()}
+          </div>
         </div>
       </div>
     </div>
