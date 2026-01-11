@@ -161,10 +161,65 @@ const PatientPortal = () => {
             kidney: { risk: 'LOW', score: Math.round(100 - score * 0.1), trend: 'STABLE', nextScreening: 'Annual' },
             liver: { risk: 'LOW', score: Math.round(100 - score * 0.1), trend: 'STABLE', nextScreening: 'Annual' }
           });
+
+          // Trigger FDA Check
+          extractAndValidateMedications(latest.fullData);
         }
       } catch (e) {
         console.error("Failed to fetch records", e);
       }
+    };
+
+    const extractAndValidateMedications = async (analysis: any) => {
+      if (!analysis) return;
+
+      const candidates = new Set<string>();
+      // Regex to find capitalized words after action verbs
+      const regex = /(?:Start|Take|Prescribe|Consider|Monitor|Add)\s+([A-Z][a-z]+)/g;
+
+      // 1. Scan Recommendations
+      const recs = analysis.recommendations || [];
+      recs.forEach((r: any) => {
+        const text = r.recommendation || "";
+        let match;
+        while ((match = regex.exec(text)) !== null) {
+          if (match[1].length > 3) candidates.add(match[1]);
+        }
+      });
+
+      // 2. Scan Care Plan Actions
+      const actions = analysis.careCoordinator?.carePlan?.immediateActions || [];
+      actions.forEach((act: string) => {
+        let match;
+        while ((match = regex.exec(act)) !== null) {
+          if (match[1].length > 3) candidates.add(match[1]);
+        }
+      });
+
+      console.log('💊 Potential Meds:', Array.from(candidates));
+
+      const validatedMeds = [];
+      for (const drug of Array.from(candidates)) {
+        // Filter common non-drugs
+        if (['Blood', 'Sugar', 'Pressure', 'Diet', 'Exercise', 'Water', 'Salt', 'Insulin', 'Daily', 'Weekly'].includes(drug)) continue;
+
+        try {
+          const info = await openFDAService.getDrugLabel(drug);
+          if (info) {
+            validatedMeds.push({
+              name: info.brand_name, // e.g., "Metformin Hydrochloride"
+              dosage: "As prescribed",
+              purpose: `Extracted from: ${drug}`,
+              safetyStatus: info.boxed_warning ? 'Warning' : 'Safe',
+              warnings: info.boxed_warning || info.warnings[0],
+              nextReview: 'Next Appt'
+            });
+          }
+        } catch (e) {
+          console.warn(`Skipping FDA check for ${drug}`);
+        }
+      }
+      setMedications(validatedMeds);
     };
 
     fetchRecords();
